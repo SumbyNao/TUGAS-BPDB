@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %}Beranda PPDB{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Selamat Datang di Aplikasi PPDB</h1>
+    <p>Silakan klik tombol di bawah untuk mulai mengisi formulir pendaftaran.</p>
+    <a href="{{ url_for('ppdb.formulir') }}" class="btn btn-primary">Isi Formulir</a>
+</div>
+{% endblock %}

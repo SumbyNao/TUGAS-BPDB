@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Upload Berkas</h2>
+<form method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    {{ form.kartu_keluarga.label }}<br>{{ form.kartu_keluarga() }}<br>
+    {{ form.akta_kelahiran.label }}<br>{{ form.akta_kelahiran() }}<br>
+    {{ form.rapor.label }}<br>{{ form.rapor() }}<br>
+    {{ form.surat_keterangan.label }}<br>{{ form.surat_keterangan() }}<br>
+    {{ form.submit(class="btn btn-success") }}
+</form>
+{% endblock %}
