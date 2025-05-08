@@ -1,5 +1,7 @@
 from flask import Blueprint
 
-ppdb_bp = Blueprint('ppdb', __name__, url_prefix='/ppdb')
+ppdb_bp = Blueprint('ppdb', __name__)
 
-from . import routes
+from app.ppdb import routes
+
+

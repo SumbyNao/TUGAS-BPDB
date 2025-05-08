@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="jumbotron bg-light p-5 rounded">
+        <h1 class="display-4">Selamat Datang di PPDB Online</h1>
+        <p class="lead">Sistem Penerimaan Peserta Didik Baru (PPDB) Online</p>
+        
+        {% if current_user.is_authenticated %}
+            {% if not current_user.pendaftar %}
+            <div class="mt-4">
+                <p>Silakan lengkapi formulir pendaftaran Anda:</p>
+                <a href="{{ url_for('ppdb.formulir') }}" class="btn btn-primary btn-lg">
+                    Isi Formulir Pendaftaran
+                </a>
+            </div>
+            {% else %}
+            <div class="mt-4">
+                <p>Lihat status pendaftaran Anda:</p>
+                <a href="{{ url_for('ppdb.status') }}" class="btn btn-info btn-lg">
+                    Cek Status
+                </a>
+            </div>
+            {% endif %}
+        {% else %}
+            <hr class="my-4">
+            <p>Silakan login atau daftar untuk memulai proses pendaftaran:</p>
+            <div class="mt-3">
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg me-2">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-success btn-lg">Daftar Baru</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <h3>Visi & Misi</h3>
+            <p>Menjadi lembaga pendidikan unggul yang menghasilkan lulusan berkualitas, 
+               berkarakter, dan siap menghadapi tantangan global.</p>
+        </div>
+        <div class="col-md-4">
+            <h3>Program Unggulan</h3>
+            <ul>
+                <li>Kurikulum Merdeka</li>
+                <li>Program Bilingual</li>
+                <li>Ekstrakurikuler Beragam</li>
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h3>Fasilitas</h3>
+            <ul>
+                <li>Laboratorium Modern</li>
+                <li>Perpustakaan Digital</li>
+                <li>Sarana Olahraga Lengkap</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
