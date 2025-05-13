@@ -1,4 +1,4 @@
-from app import db
+from app import db, login_manager
 from flask_login import UserMixin
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), default='user') 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relasi ke pendaftar (1 user hanya bisa mendaftar sekali)
     pendaftar = db.relationship('Pendaftar', backref='user', uselist=False)
@@ -36,20 +37,26 @@ class Pendaftar(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     nama_lengkap = db.Column(db.String(100), nullable=False)
-    nisn = db.Column(db.String(10), nullable=False, unique=True)
+    nisn = db.Column(db.String(20), nullable=False, unique=True)
     tempat_lahir = db.Column(db.String(50), nullable=False)
     tanggal_lahir = db.Column(db.Date, nullable=False)
-    jenis_kelamin = db.Column(db.String(1), nullable=False)
+    jenis_kelamin = db.Column(db.String(10), nullable=False)
     alamat = db.Column(db.Text, nullable=False)
     asal_sekolah = db.Column(db.String(100), nullable=False)
-    jalur_pendaftaran = db.Column(db.String(20), nullable=False)
+    jalur_pendaftaran = db.Column(db.String(50), nullable=False)
     tanggal_daftar = db.Column(db.DateTime, default=datetime.utcnow)
+    agama = db.Column(db.String(20), nullable=False)
+    no_hp = db.Column(db.String(15), nullable=False)
+    nilai_un = db.Column(db.Float)
+    jurusan_pilihan = db.Column(db.String(50), nullable=False)
 
     # Status verifikasi
     status = db.Column(db.String(20), default='Menunggu')  # Menunggu, Diverifikasi, Ditolak
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relasi ke berkas
-    berkas = db.relationship('Berkas', backref='pendaftar', uselist=False)
+    berkas = db.relationship('Berkas', backref='pendaftar', lazy=True)
+    pembayaran = db.relationship('Pembayaran', backref='pendaftar', lazy=True)
 
     def __repr__(self):
         return f'<Pendaftar {self.nama_lengkap} - NISN: {self.nisn}>'
@@ -94,6 +101,10 @@ class Berkas(db.Model):
     rapor = db.Column(db.String(200))
     surat_keterangan = db.Column(db.String(200))
     tanggal_upload = db.Column(db.DateTime, default=datetime.utcnow)
+    jenis_berkas = db.Column(db.String(50), nullable=False)
+    nama_file = db.Column(db.String(255), nullable=False)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='Menunggu')
 
     def __repr__(self):
         return f'<Berkas Pendaftar ID: {self.pendaftar_id}>'
@@ -144,3 +155,13 @@ class Payment(db.Model):
                     self.transaction_id = transaction_id
             return True
         return False
+
+class Pembayaran(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    pendaftar_id = db.Column(db.Integer, db.ForeignKey('pendaftar.id'), nullable=False)
+    jumlah = db.Column(db.Integer, nullable=False)
+    bukti_pembayaran = db.Column(db.String(255))
+    status = db.Column(db.String(20), default='Menunggu')
+    tanggal_bayar = db.Column(db.DateTime, default=datetime.utcnow)
+    verified_at = db.Column(db.DateTime)
+    verified_by = db.Column(db.Integer, db.ForeignKey('user.id'))

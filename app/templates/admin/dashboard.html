@@ -4,7 +4,146 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Dashboard Admin</h2>
-    <p>Welcome, {{ current_user.nama_lengkap }}</p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard Admin</h2>
+        <div class="text-muted">Selamat datang, {{ current_user.nama_lengkap }}</div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase">Total Pendaftar</h6>
+                            <h2 class="mb-0">{{ stats.total_pendaftar }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase">Menunggu Verifikasi</h6>
+                            <h2 class="mb-0">{{ stats.menunggu_verifikasi }}</h2>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase">Terverifikasi</h6>
+                            <h2 class="mb-0">{{ stats.terverifikasi }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-uppercase">Ditolak</h6>
+                            <h2 class="mb-0">{{ stats.ditolak }}</h2>
+                        </div>
+                        <i class="fas fa-times-circle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Menu Manajemen</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin.list_pendaftar') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-users me-2"></i>Data Pendaftar
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin.list_berkas') }}" class="btn btn-outline-warning w-100">
+                                <i class="fas fa-file-alt me-2"></i>Verifikasi Berkas
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ url_for('admin.list_pembayaran') }}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-money-bill me-2"></i>Data Pembayaran
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Pendaftar Terbaru</h5>
+                    <a href="{{ url_for('admin.list_pendaftar') }}" class="btn btn-sm btn-primary">
+                        Lihat Semua
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>NISN</th>
+                                    <th>Nama</th>
+                                    <th>Jurusan</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pendaftar in pendaftars[:5] %}
+                                <tr>
+                                    <td>{{ pendaftar.nisn }}</td>
+                                    <td>{{ pendaftar.nama_lengkap }}</td>
+                                    <td>{{ pendaftar.jurusan_pilihan }}</td>
+                                    <td>
+                                        <span class="badge {% if pendaftar.status == 'Diverifikasi' %}bg-success
+                                              {% elif pendaftar.status == 'Ditolak' %}bg-danger
+                                              {% else %}bg-warning{% endif %}">
+                                            {{ pendaftar.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('admin.detail_pendaftar', id=pendaftar.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
