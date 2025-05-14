@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import Pendaftar, Berkas
+from app.models import Pendaftar, Berkas, Pembayaran
 from app.ppdb.forms import FormulirPPDB, UploadBerkasForm
 from config import UPLOAD_FOLDER
 
@@ -42,8 +42,7 @@ def formulir():
 @ppdb_bp.route('/status')
 @login_required
 def status():
-    pendaftar = current_user.pendaftar
-    return render_template('ppdb/status.html', pendaftar=pendaftar)
+    return render_template('ppdb/status.html')
 
 @ppdb_bp.route('/upload-berkas', methods=['GET', 'POST'])
 @login_required
@@ -74,3 +73,8 @@ def upload_berkas():
         return redirect(url_for('ppdb.status'))
     
     return render_template('ppdb/upload_berkas.html', form=form)
+
+@ppdb_bp.route('/pembayaran', methods=['GET', 'POST'])
+@login_required
+def pembayaran():
+    return render_template('ppdb/pembayaran.html')

@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models import User
 from app.auth import auth_bp
+from app.auth.forms import RegistrationForm
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -26,7 +27,20 @@ def login():
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    return render_template('auth/register.html')
+    
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(
+            nama_lengkap=form.nama_lengkap.data,
+            email=form.email.data.lower()
+        )
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        flash('Registrasi berhasil! Silakan login.', 'success')
+        return redirect(url_for('auth.login'))
+    
+    return render_template('auth/register.html', form=form)
 
 @auth_bp.route('/logout')
 def logout():
