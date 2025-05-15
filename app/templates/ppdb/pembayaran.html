@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Pembayaran PPDB{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Form Pembayaran PPDB</h4>
+                </div>
+                <div class="card-body">
+                    {% include 'admin/components/notifications.html' %}
+                    
+                    <!-- Info Pembayaran -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Informasi Pembayaran</h5>
+                        <p class="mb-0">
+                            Silakan transfer biaya pendaftaran sebesar <strong>Rp 200.000</strong> ke rekening berikut:
+                        </p>
+                        <ul class="mb-0">
+                            <li>Bank Mandiri: 1234567890</li>
+                            <li>A/N: SMK NEGERI 1</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form.jumlah.label(class="form-label") }}
+                                {{ form.jumlah(class="form-control" + (" is-invalid" if form.jumlah.errors else ""), 
+                                             value="200000", readonly=true) }}
+                                {% for error in form.jumlah.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-md-6">
+                                {{ form.metode_pembayaran.label(class="form-label") }}
+                                {{ form.metode_pembayaran(class="form-select" + (" is-invalid" if form.metode_pembayaran.errors else "")) }}
+                                {% for error in form.metode_pembayaran.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        {{ form.bukti_pembayaran.label(class="form-label") }}
+                                        {{ form.bukti_pembayaran(class="form-control" + (" is-invalid" if form.bukti_pembayaran.errors else "")) }}
+                                        <div class="form-text">Upload bukti transfer/pembayaran (PNG/JPG/PDF, max 2MB)</div>
+                                        {% for error in form.bukti_pembayaran.errors %}
+                                            <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{{ url_for('ppdb.dashboard') }}" class="btn btn-secondary me-md-2">Batal</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// File size validation
+document.querySelector('input[type="file"]').addEventListener('change', function() {
+    if (this.files[0]) {
+        const maxSize = 2; // 2MB max
+        const fileSize = this.files[0].size / 1024 / 1024; // in MB
+        
+        if (fileSize > maxSize) {
+            alert(`Ukuran file terlalu besar. Maksimal ${maxSize}MB`);
+            this.value = '';
+        }
+    }
+});
+
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %}

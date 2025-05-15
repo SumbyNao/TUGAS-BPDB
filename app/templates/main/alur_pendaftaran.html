@@ -4,7 +4,92 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h1>Alur Pendaftaran PPDB</h1>
-    <!-- Add your content here -->
+    <h2 class="mb-4"><i class="fas fa-stream me-2"></i>Alur Pendaftaran PPDB</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <!-- Timeline steps -->
+            <div class="timeline">
+                <div class="step mb-4">
+                    <h4><i class="fas fa-user-plus text-primary me-2"></i>1. Registrasi Akun</h4>
+                    <p>Daftar akun baru dengan email dan password</p>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-right me-1"></i>Daftar Sekarang
+                    </a>
+                </div>
+                
+                <div class="step mb-4">
+                    <h4><i class="fas fa-edit text-success me-2"></i>2. Isi Formulir</h4>
+                    <p>Lengkapi data diri dan informasi pendaftaran</p>
+                    <ul class="text-muted small">
+                        <li>Data pribadi</li>
+                        <li>Data orang tua</li>
+                        <li>Data akademik</li>
+                        <li>Pilihan jurusan</li>
+                    </ul>
+                </div>
+                
+                <div class="step mb-4">
+                    <h4><i class="fas fa-file-upload text-warning me-2"></i>3. Upload Berkas</h4>
+                    <p>Upload dokumen persyaratan yang dibutuhkan</p>
+                    <ul class="text-muted small">
+                        <li>Kartu Keluarga</li>
+                        <li>Akta Kelahiran</li>
+                        <li>Ijazah/SKL</li>
+                        <li>Raport</li>
+                    </ul>
+                </div>
+                
+                <div class="step mb-4">
+                    <h4><i class="fas fa-money-bill text-info me-2"></i>4. Pembayaran</h4>
+                    <p>Lakukan pembayaran biaya pendaftaran</p>
+                    <div class="alert alert-light small">
+                        <p class="mb-1"><strong>Biaya Pendaftaran:</strong> Rp. 200.000</p>
+                        <p class="mb-0"><strong>No. Rekening:</strong> 1234567890 (Bank XYZ)</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <h4><i class="fas fa-check-circle text-success me-2"></i>5. Verifikasi</h4>
+                    <p>Tunggu verifikasi dari admin</p>
+                    <div class="alert alert-success small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Proses verifikasi maksimal 2x24 jam kerja
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info tambahan -->
+            <div class="mt-4 pt-4 border-top">
+                <h5><i class="fas fa-phone-alt me-2"></i>Butuh Bantuan?</h5>
+                <p class="mb-0">Hubungi kami di <strong>(0123) 456789</strong> atau email ke <strong>ppdb@sekolah.sch.id</strong></p>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- CSS untuk timeline -->
+{% block styles %}
+<style>
+.timeline .step {
+    position: relative;
+    padding-left: 30px;
+    border-left: 2px solid #dee2e6;
+}
+.timeline .step:last-child {
+    border-left: none;
+}
+.timeline .step::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 0;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #007bff;
+}
+</style>
+{% endblock %}
 {% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard PPDB{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    {% include 'admin/components/notifications.html' %}
+    
+    <!-- Progress Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Progress Pendaftaran</h5>
+            <div class="progress mb-3">
+                <div class="progress-bar" role="progressbar" 
+                     style="width: {{ progress }}%" 
+                     aria-valuenow="{{ progress }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                    {{ "%.0f"|format(progress) }}%
+                </div>
+            </div>
+            <div class="row text-center">
+                <div class="col">
+                    <i class="fas fa-file-alt {{ 'text-success' if pendaftar else 'text-muted' }}"></i>
+                    <p class="small mb-0">Formulir</p>
+                </div>
+                <div class="col">
+                    <i class="fas fa-upload {{ 'text-success' if berkas and berkas|length >= 4 else 'text-muted' }}"></i>
+                    <p class="small mb-0">Berkas</p>
+                </div>
+                <div class="col">
+                    <i class="fas fa-money-bill {{ 'text-success' if pembayaran and pembayaran.status == 'Diverifikasi' else 'text-muted' }}"></i>
+                    <p class="small mb-0">Pembayaran</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="row">
+        <!-- Data Pendaftaran -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Data Pendaftaran</h5>
+                    {% if not pendaftar %}
+                    <a href="{{ url_for('ppdb.formulir') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Isi Formulir
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if pendaftar %}
+                    <table class="table">
+                        <tr>
+                            <th width="40%">Status</th>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'warning' if pendaftar.status == 'Menunggu' 
+                                    else 'success' if pendaftar.status == 'Diverifikasi' 
+                                    else 'danger' 
+                                }}">
+                                    {{ pendaftar.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>NISN</th>
+                            <td>{{ pendaftar.nisn }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nama Lengkap</th>
+                            <td>{{ pendaftar.nama_lengkap }}</td>
+                        </tr>
+                        <tr>
+                            <th>Jurusan</th>
+                            <td>{{ pendaftar.jurusan_pilihan }}</td>
+                        </tr>
+                        <tr>
+                            <th>Jalur</th>
+                            <td>{{ pendaftar.jalur_pendaftaran }}</td>
+                        </tr>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">Anda belum mengisi formulir pendaftaran</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Berkas -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Berkas</h5>
+                    {% if pendaftar and (not berkas or berkas|length < 4) %}
+                    <a href="{{ url_for('ppdb.upload_berkas') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-upload"></i> Upload Berkas
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if berkas %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Jenis Berkas</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for b in berkas %}
+                                <tr>
+                                    <td>{{ b.jenis_berkas|title }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 
+                                            'warning' if b.status == 'Menunggu' 
+                                            else 'success' if b.status == 'Diverifikasi' 
+                                            else 'danger' 
+                                        }}">
+                                            {{ b.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('ppdb.lihat_berkas', berkas_id=b.id) }}" 
+                                           class="btn btn-sm btn-info" target="_blank">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">Belum ada berkas yang diupload</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Pembayaran -->
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Pembayaran</h5>
+                    {% if pendaftar and not pembayaran %}
+                    <a href="{{ url_for('ppdb.pembayaran') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-money-bill"></i> Upload Pembayaran
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if pembayaran %}
+                    <table class="table">
+                        <tr>
+                            <th width="20%">Status</th>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'warning' if pembayaran.status == 'Menunggu' 
+                                    else 'success' if pembayaran.status == 'Diverifikasi' 
+                                    else 'danger' 
+                                }}">
+                                    {{ pembayaran.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Jumlah</th>
+                            <td>Rp {{ "{:,.0f}".format(pembayaran.jumlah) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Metode</th>
+                            <td>{{ pembayaran.metode_pembayaran|title }}</td>
+                        </tr>
+                        <tr>
+                            <th>Tanggal</th>
+                            <td>{{ pembayaran.tanggal_bayar.strftime('%d-%m-%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Bukti</th>
+                            <td>
+                                <a href="{{ url_for('ppdb.lihat_bukti', pembayaran_id=pembayaran.id) }}" 
+                                   class="btn btn-sm btn-info" target="_blank">
+                                    <i class="fas fa-eye"></i> Lihat Bukti
+                                </a>
+                            </td>
+                        </tr>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">Belum ada data pembayaran</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,128 +1,144 @@
-{% extends 'base.html' %}
+{% extends "admin/base.html" %}
 
-{% block title %}Verifikasi Berkas{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Manajemen Berkas</h1>
+</div>
 
-{% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-file-alt me-2"></i>Verifikasi Berkas</h2>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Verifikasi Berkas</li>
-            </ol>
-        </nav>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="berkasTable">
+                <thead>
+                    <tr>
+                        <th>NISN</th>
+                        <th>Nama Pendaftar</th>
+                        <th>Jenis Berkas</th>
+                        <th>Status</th>
+                        <th>Tanggal Upload</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for berkas in berkas_list %}
+                    <tr>
+                        <td>{{ berkas.pendaftar.nisn }}</td>
+                        <td>{{ berkas.pendaftar.nama_lengkap }}</td>
+                        <td>{{ berkas.jenis_berkas|title }}</td>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'warning' if berkas.status == 'Menunggu' 
+                                else 'success' if berkas.status == 'Diverifikasi' 
+                                else 'danger' 
+                            }}">
+                                {{ berkas.status }}
+                            </span>
+                        </td>
+                        <td>{{ berkas.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.lihat_berkas', berkas_id=berkas.id) }}" 
+                                   class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye"></i> Lihat
+                                </a>
+                                {% if berkas.status == 'Menunggu' %}
+                                <button type="button" 
+                                        class="btn btn-sm btn-success"
+                                        onclick="verifikasiBerkas({{ berkas.id }})">
+                                    <i class="fas fa-check"></i> Verifikasi
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger"
+                                        onclick="tolakBerkas({{ berkas.id }})">
+                                    <i class="fas fa-times"></i> Tolak
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+</div>
 
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="tableBerkas">
-                    <thead>
-                        <tr>
-                            <th>NISN</th>
-                            <th>Nama Pendaftar</th>
-                            <th>Jenis Berkas</th>
-                            <th>Tanggal Upload</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for berkas in berkas_list %}
-                        <tr>
-                            <td>{{ berkas.pendaftar.nisn }}</td>
-                            <td>{{ berkas.pendaftar.nama_lengkap }}</td>
-                            <td>{{ berkas.jenis_berkas }}</td>
-                            <td>{{ berkas.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</td>
-                            <td>
-                                <span class="badge {% if berkas.status == 'Diverifikasi' %}bg-success
-                                      {% elif berkas.status == 'Ditolak' %}bg-danger
-                                      {% else %}bg-warning{% endif %}">
-                                    {{ berkas.status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{{ url_for('admin.lihat_berkas', berkas_id=berkas.id) }}" 
-                                       class="btn btn-sm btn-info" target="_blank">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    {% if berkas.status != 'Diverifikasi' %}
-                                    <button onclick="verifikasiBerkas({{ berkas.id }})" 
-                                            class="btn btn-sm btn-success">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    {% endif %}
-                                    <button onclick="tolakBerkas({{ berkas.id }})" 
-                                            class="btn btn-sm btn-danger">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<!-- Modal Tolak -->
+<div class="modal fade" id="tolakModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tolak Berkas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tolakForm">
+                    <div class="mb-3">
+                        <label class="form-label">Alasan Penolakan</label>
+                        <textarea class="form-control" name="alasan" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="submitTolak()">Tolak</button>
             </div>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{ super() }}
+<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
 <script>
-function verifikasiBerkas(id) {
-    Swal.fire({
-        title: 'Verifikasi Berkas',
-        text: "Apakah berkas ini sudah sesuai?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Ya, Verifikasi',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/berkas/${id}/verifikasi`, {
-                method: 'POST'
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
+$(document).ready(function() {
+    $('#berkasTable').DataTable({
+        order: [[4, 'desc']],
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
         }
     });
+});
+
+let berkasId;
+
+function verifikasiBerkas(id) {
+    if (confirm('Verifikasi berkas ini?')) {
+        fetch(`/admin/berkas/${id}/verifikasi`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(() => location.reload());
+    }
 }
 
 function tolakBerkas(id) {
-    Swal.fire({
-        title: 'Tolak Berkas',
-        text: 'Masukkan alasan penolakan:',
-        input: 'textarea',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Tolak',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/berkas/${id}/tolak`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    alasan: result.value
-                })
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    });
+    berkasId = id;
+    const modal = new bootstrap.Modal(document.getElementById('tolakModal'));
+    modal.show();
+}
+
+function submitTolak() {
+    const form = document.getElementById('tolakForm');
+    const formData = new FormData(form);
+    const data = {
+        alasan: formData.get('alasan')
+    };
+    
+    fetch(`/admin/berkas/${berkasId}/tolak`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    }).then(() => location.reload());
 }
 </script>
 {% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css">
 {% endblock %}

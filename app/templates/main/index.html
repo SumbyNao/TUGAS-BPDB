@@ -1,118 +1,100 @@
 {% extends "base.html" %}
 
-{% block title %}Beranda PPDB{% endblock %}
+{% block title %}PPDB SMK Karya Bangsa - Penerimaan Peserta Didik Baru{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Selamat Datang di PPDB Online</h1>
-    <div class="jumbotron bg-light p-5 rounded">
-        <h1 class="display-4">Selamat Datang di PPDB Online</h1>
-        <p class="lead">Sistem Penerimaan Peserta Didik Baru (PPDB) Online 2024/2025</p>
-        
-        {% if current_user.is_authenticated %}
-            {% if not current_user.pendaftar %}
+<!-- Hero Section -->
+<div class="bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">PPDB Online</h1>
+                <p class="lead">Selamat datang di Portal PPDB SMK Karya Bangsa. Daftarkan diri Anda untuk menjadi bagian dari keluarga besar kami.</p>
+                {% if not current_user.is_authenticated %}
                 <div class="mt-4">
-                    <p>Silakan lengkapi formulir pendaftaran Anda:</p>
-                    <a href="{{ url_for('ppdb.formulir') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-edit me-2"></i>Isi Formulir Pendaftaran
-                    </a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg me-2">Daftar Sekarang</a>
+                    <a href="{{ url_for('main.info') }}" class="btn btn-outline-light btn-lg">Info Selengkapnya</a>
                 </div>
-            {% else %}
-                <div class="mt-4">
-                    <p>Lihat status pendaftaran Anda:</p>
-                    <a href="{{ url_for('ppdb.status') }}" class="btn btn-info btn-lg">
-                        <i class="fas fa-search me-2"></i>Cek Status
-                    </a>
-                </div>
-            {% endif %}
-        {% else %}
-            <hr class="my-4">
-            <p>Untuk memulai pendaftaran, silakan login atau daftar terlebih dahulu:</p>
-            <div class="mt-3">
-                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg me-2">
-                    <i class="fas fa-sign-in-alt me-2"></i>Login
-                </a>
-                <a href="{{ url_for('auth.register') }}" class="btn btn-success btn-lg">
-                    <i class="fas fa-user-plus me-2"></i>Daftar Baru
-                </a>
+                {% endif %}
             </div>
-        {% endif %}
+            <div class="col-md-6">
+                <img src="{{ url_for('static', filename='img/hero-image.png') }}" alt="PPDB" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Section -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h2>Mengapa Memilih SMK Karya Bangsa?</h2>
+        <p class="text-muted">Beberapa alasan mengapa kami adalah pilihan terbaik untuk masa depan Anda</p>
     </div>
 
-    <!-- Info Section -->
-    <div class="row mt-5">
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 border-primary">
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
                 <div class="card-body text-center">
-                    <i class="fas fa-calendar-alt fa-3x text-primary mb-3"></i>
-                    <h3>Jadwal PPDB</h3>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Pendaftaran: 1 - 30 Juni 2024</li>
-                        <li class="mb-2">Verifikasi: 1 - 10 Juli 2024</li>
-                        <li class="mb-2">Pengumuman: 15 Juli 2024</li>
-                        <li>Daftar Ulang: 16 - 20 Juli 2024</li>
-                    </ul>
+                    <i class="fas fa-medal fa-3x text-primary mb-3"></i>
+                    <h4>Akreditasi A</h4>
+                    <p class="text-muted">Sekolah dengan akreditasi A dan fasilitas lengkap untuk menunjang pembelajaran</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 border-success">
+        <div class="col-md-4">
+            <div class="card h-100">
                 <div class="card-body text-center">
-                    <i class="fas fa-graduation-cap fa-3x text-success mb-3"></i>
-                    <h3>Program Unggulan</h3>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">Kurikulum Merdeka</li>
-                        <li class="mb-2">Program Bilingual</li>
-                        <li class="mb-2">Ekstrakurikuler Beragam</li>
-                        <li>Fasilitas Lengkap</li>
-                    </ul>
+                    <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
+                    <h4>Guru Profesional</h4>
+                    <p class="text-muted">Tenaga pengajar berpengalaman dan tersertifikasi di bidangnya</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 border-info">
+        <div class="col-md-4">
+            <div class="card h-100">
                 <div class="card-body text-center">
-                    <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
-                    <h3>Informasi</h3>
-                    <p>Hubungi kami di:</p>
-                    <p><i class="fas fa-phone me-2"></i>(021) 123-456</p>
-                    <p><i class="fas fa-envelope me-2"></i>info@ppdb.com</p>
-                    <p><i class="fab fa-whatsapp me-2"></i>0812-3456-7890</p>
+                    <i class="fas fa-building fa-3x text-primary mb-3"></i>
+                    <h4>Link & Match</h4>
+                    <p class="text-muted">Kerjasama dengan berbagai industri untuk prakerin dan penempatan kerja</p>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Quick Links -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h4 class="text-center mb-4">Link Cepat</h4>
-                    <div class="row text-center">
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('main.alur_pendaftaran') }}" class="text-decoration-none">
-                                <i class="fas fa-road fa-2x d-block mb-2 text-primary"></i>
-                                Alur Pendaftaran
-                            </a>
+<!-- Timeline Section -->
+<div class="bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2>Jadwal PPDB</h2>
+            <p class="text-muted">Timeline pendaftaran peserta didik baru tahun ajaran 2025/2026</p>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="timeline">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-calendar-alt text-primary"></i> 1 - 30 Juni 2025</h5>
+                            <p class="card-text">Pendaftaran Online</p>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('main.pengumuman') }}" class="text-decoration-none">
-                                <i class="fas fa-bullhorn fa-2x d-block mb-2 text-warning"></i>
-                                Pengumuman
-                            </a>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-file-alt text-primary"></i> 1 - 5 Juli 2025</h5>
+                            <p class="card-text">Verifikasi Berkas</p>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="#" class="text-decoration-none">
-                                <i class="fas fa-download fa-2x d-block mb-2 text-success"></i>
-                                Download Brosur
-                            </a>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-list-alt text-primary"></i> 10 Juli 2025</h5>
+                            <p class="card-text">Pengumuman Hasil Seleksi</p>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <a href="#" class="text-decoration-none">
-                                <i class="fas fa-question-circle fa-2x d-block mb-2 text-info"></i>
-                                FAQ
-                            </a>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-user-check text-primary"></i> 11 - 15 Juli 2025</h5>
+                            <p class="card-text">Daftar Ulang</p>
                         </div>
                     </div>
                 </div>
@@ -120,4 +102,58 @@
         </div>
     </div>
 </div>
+
+<!-- Contact Section -->
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h2>Hubungi Kami</h2>
+        <p class="text-muted">Jika ada pertanyaan, silakan hubungi kami</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="fas fa-phone fa-2x text-primary mb-3"></i>
+                <h5>Telepon</h5>
+                <p>081345809198</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="fas fa-envelope fa-2x text-primary mb-3"></i>
+                <h5>Email</h5>
+                <p>ppdb@smkkaryabangsa.sch.id</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="text-center">
+                <i class="fas fa-map-marker-alt fa-2x text-primary mb-3"></i>
+                <h5>Alamat</h5>
+                <p>Jl. Makam Pahlawan, Pal 7, Sintang</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.timeline .card {
+    border-left: 4px solid #0d6efd;
+    border-radius: 0;
+    margin-left: 20px;
+}
+.timeline .card::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #0d6efd;
+    position: absolute;
+    left: -32px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</style>
 {% endblock %}

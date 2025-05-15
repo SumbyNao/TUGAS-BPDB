@@ -1,116 +1,133 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Formulir Pendaftaran - PPDB Online{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-{% endblock %}
+{% block title %}Formulir Pendaftaran PPDB{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">Formulir Pendaftaran PPDB</h4>
+                    <h4 class="card-title mb-0">Formulir Pendaftaran PPDB</h4>
                 </div>
                 <div class="card-body">
-                    <form method="POST">
+                    {% include 'admin/components/notifications.html' %}
+                    
+                    <form method="POST" class="needs-validation" novalidate>
                         {{ form.hidden_tag() }}
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        
+                        <!-- Data Pribadi -->
+                        <h5 class="mb-3">Data Pribadi</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
                                 {{ form.nisn.label(class="form-label") }}
-                                {{ form.nisn(class="form-control") }}
+                                {{ form.nisn(class="form-control" + (" is-invalid" if form.nisn.errors else "")) }}
                                 {% for error in form.nisn.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-6">
                                 {{ form.nama_lengkap.label(class="form-label") }}
-                                {{ form.nama_lengkap(class="form-control") }}
+                                {{ form.nama_lengkap(class="form-control" + (" is-invalid" if form.nama_lengkap.errors else "")) }}
                                 {% for error in form.nama_lengkap.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.tempat_lahir.label(class="form-label") }}
+                                {{ form.tempat_lahir(class="form-control" + (" is-invalid" if form.tempat_lahir.errors else "")) }}
+                                {% for error in form.tempat_lahir.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.tanggal_lahir.label(class="form-label") }}
+                                {{ form.tanggal_lahir(class="form-control" + (" is-invalid" if form.tanggal_lahir.errors else ""), type="date") }}
+                                {% for error in form.tanggal_lahir.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.jenis_kelamin.label(class="form-label") }}
+                                {{ form.jenis_kelamin(class="form-select" + (" is-invalid" if form.jenis_kelamin.errors else "")) }}
+                                {% for error in form.jenis_kelamin.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                {{ form.agama.label(class="form-label") }}
+                                {{ form.agama(class="form-select" + (" is-invalid" if form.agama.errors else "")) }}
+                                {% for error in form.agama.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.tempat_lahir.label(class="form-label") }}
-                                {{ form.tempat_lahir(class="form-control") }}
-                                {% for error in form.tempat_lahir.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.tanggal_lahir.label(class="form-label") }}
-                                {{ form.tanggal_lahir(class="form-control datepicker") }}
-                                {% for error in form.tanggal_lahir.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.jenis_kelamin.label(class="form-label") }}
-                                {{ form.jenis_kelamin(class="form-select") }}
-                                {% for error in form.jenis_kelamin.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.agama.label(class="form-label") }}
-                                {{ form.agama(class="form-select") }}
-                                {% for error in form.agama.errors %}
-                                    <span class="text-danger">{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.alamat.label(class="form-label") }}
-                            {{ form.alamat(class="form-control", rows="3") }}
-                            {% for error in form.alamat.errors %}
-                                <span class="text-danger">{{ error }}</span>
-                            {% endfor %}
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                        <!-- Kontak & Alamat -->
+                        <h5 class="mb-3">Kontak & Alamat</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
                                 {{ form.no_hp.label(class="form-label") }}
-                                {{ form.no_hp(class="form-control") }}
+                                {{ form.no_hp(class="form-control" + (" is-invalid" if form.no_hp.errors else "")) }}
                                 {% for error in form.no_hp.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-12">
+                                {{ form.alamat.label(class="form-label") }}
+                                {{ form.alamat(class="form-control" + (" is-invalid" if form.alamat.errors else ""), rows="3") }}
+                                {% for error in form.alamat.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Data Akademik -->
+                        <h5 class="mb-3">Data Akademik</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
                                 {{ form.asal_sekolah.label(class="form-label") }}
-                                {{ form.asal_sekolah(class="form-control") }}
+                                {{ form.asal_sekolah(class="form-control" + (" is-invalid" if form.asal_sekolah.errors else "")) }}
                                 {% for error in form.asal_sekolah.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-6">
+                                {{ form.nilai_un.label(class="form-label") }}
+                                {{ form.nilai_un(class="form-control" + (" is-invalid" if form.nilai_un.errors else "")) }}
+                                {% for error in form.nilai_un.errors %}
+                                    <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="col-md-6">
                                 {{ form.jurusan_pilihan.label(class="form-label") }}
-                                {{ form.jurusan_pilihan(class="form-select") }}
+                                {{ form.jurusan_pilihan(class="form-select" + (" is-invalid" if form.jurusan_pilihan.errors else "")) }}
                                 {% for error in form.jurusan_pilihan.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
-                            <div class="col-md-6 mb-3">
+                            
+                            <div class="col-md-6">
                                 {{ form.jalur_pendaftaran.label(class="form-label") }}
-                                {{ form.jalur_pendaftaran(class="form-select") }}
+                                {{ form.jalur_pendaftaran(class="form-select" + (" is-invalid" if form.jalur_pendaftaran.errors else "")) }}
                                 {% for error in form.jalur_pendaftaran.errors %}
-                                    <span class="text-danger">{{ error }}</span>
+                                    <div class="invalid-feedback">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
-
-                        <button type="submit" class="btn btn-primary">Kirim Formulir</button>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('ppdb.dashboard') }}" class="btn btn-secondary me-md-2">Batal</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
                     </form>
                 </div>
             </div>
@@ -120,11 +137,21 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{{ super() }}
 <script>
-    flatpickr(".datepicker", {
-        dateFormat: "Y-m-d",
-        maxDate: "today"
-    });
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
 </script>
 {% endblock %}

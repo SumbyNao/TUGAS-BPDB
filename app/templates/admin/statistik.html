@@ -1,71 +1,81 @@
-{% extends 'base.html' %}
+{% extends "admin/base.html" %}
 
-{% block title %}Statistik PPDB{% endblock %}
-
-{% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-chart-bar me-2"></i>Statistik PPDB</h2>
-        <a href="{{ url_for('admin.export_data') }}" class="btn btn-success">
-            <i class="fas fa-file-excel me-2"></i>Export Data
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Statistik PPDB</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('admin.export_data') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-download"></i> Export Data
         </a>
     </div>
+</div>
 
-    <div class="row">
-        <!-- Statistik per Jurusan -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">Statistik per Jurusan</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartJurusan"></canvas>
-                </div>
+<div class="row">
+    <!-- Statistik Per Jurusan -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Statistik Per Jurusan</h5>
             </div>
-        </div>
-
-        <!-- Statistik per Jalur -->
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0">Statistik per Jalur</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartJalur"></canvas>
+            <div class="card-body">
+                <canvas id="jurusanChart"></canvas>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Jurusan</th>
+                                <th>Total</th>
+                                <th>Diterima</th>
+                                <th>Persentase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in jurusan_stats %}
+                            <tr>
+                                <td>{{ stat.jurusan_pilihan }}</td>
+                                <td>{{ stat.total }}</td>
+                                <td>{{ stat.diterima }}</td>
+                                <td>
+                                    {{ "%.1f"|format(stat.diterima/stat.total*100 if stat.total > 0 else 0) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Detail per Jurusan</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Jurusan</th>
-                                    <th>Total Pendaftar</th>
-                                    <th>Diterima</th>
-                                    <th>Persentase</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for stat in jurusan_stats %}
-                                <tr>
-                                    <td>{{ stat.jurusan_pilihan }}</td>
-                                    <td>{{ stat.total }}</td>
-                                    <td>{{ stat.diterima }}</td>
-                                    <td>{{ "%.1f"|format(stat.diterima/stat.total*100) }}%</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- Statistik Per Jalur -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Statistik Per Jalur Pendaftaran</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="jalurChart"></canvas>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Jalur</th>
+                                <th>Total</th>
+                                <th>Persentase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in jalur_stats %}
+                            <tr>
+                                <td>{{ stat.jalur_pendaftaran }}</td>
+                                <td>{{ stat.total }}</td>
+                                <td>
+                                    {{ "%.1f"|format(stat.total/jalur_stats|sum(attribute='total')*100) }}%
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -74,59 +84,69 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ super() }}
 <script>
-// Data untuk grafik jurusan
-const jurusanData = {
-    labels: [{% for stat in jurusan_stats %}'{{ stat.jurusan_pilihan }}',{% endfor %}],
-    datasets: [{
-        label: 'Total Pendaftar',
-        data: [{% for stat in jurusan_stats %}{{ stat.total }},{% endfor %}],
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-    }]
-};
-
-// Data untuk grafik jalur
-const jalurData = {
-    labels: [{% for stat in jalur_stats %}'{{ stat.jalur_pendaftaran }}',{% endfor %}],
-    datasets: [{
-        label: 'Jumlah Pendaftar',
-        data: [{% for stat in jalur_stats %}{{ stat.total }},{% endfor %}],
-        backgroundColor: [
-            'rgba(255, 99, 132, 0.5)',
-            'rgba(75, 192, 192, 0.5)',
-            'rgba(255, 205, 86, 0.5)'
-        ],
-        borderColor: [
-            'rgba(255, 99, 132, 1)',
-            'rgba(75, 192, 192, 1)',
-            'rgba(255, 205, 86, 1)'
-        ],
-        borderWidth: 1
-    }]
-};
-
-// Inisialisasi grafik
-new Chart(document.getElementById('chartJurusan'), {
+// Chart untuk statistik jurusan
+const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
+new Chart(jurusanCtx, {
     type: 'bar',
-    data: jurusanData,
+    data: {
+        labels: [{% for stat in jurusan_stats %}'{{ stat.jurusan_pilihan }}',{% endfor %}],
+        datasets: [{
+            label: 'Total Pendaftar',
+            data: [{% for stat in jurusan_stats %}{{ stat.total }},{% endfor %}],
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }, {
+            label: 'Diterima',
+            data: [{% for stat in jurusan_stats %}{{ stat.diterima }},{% endfor %}],
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+        }]
+    },
     options: {
         responsive: true,
         scales: {
             y: {
-                beginAtZero: true
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
             }
         }
     }
 });
 
-new Chart(document.getElementById('chartJalur'), {
+// Chart untuk statistik jalur pendaftaran
+const jalurCtx = document.getElementById('jalurChart').getContext('2d');
+new Chart(jalurCtx, {
     type: 'pie',
-    data: jalurData,
+    data: {
+        labels: [{% for stat in jalur_stats %}'{{ stat.jalur_pendaftaran }}',{% endfor %}],
+        datasets: [{
+            data: [{% for stat in jalur_stats %}{{ stat.total }},{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 206, 86, 0.5)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
     options: {
-        responsive: true
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
     }
 });
 </script>

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Informasi PPDB - SMK NEGERI 1{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Informasi PPDB</h1>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Program Keahlian -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Program Keahlian</h5>
+                </div>
+                <div class="card-body">
+                    {% for jurusan in jurusan_list %}
+                    <div class="mb-4">
+                        <h5>{{ jurusan.nama }}</h5>
+                        <p>{{ jurusan.deskripsi }}</p>
+                        <p class="mb-0"><strong>Kuota:</strong> {{ jurusan.kuota }} siswa</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Timeline PPDB</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <h6>Pendaftaran Online</h6>
+                            <p class="text-muted">1 - 30 Juni 2025</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h6>Verifikasi Berkas</h6>
+                            <p class="text-muted">1 - 5 Juli 2025</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h6>Pengumuman</h6>
+                            <p class="text-muted">10 Juli 2025</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h6>Daftar Ulang</h6>
+                            <p class="text-muted">11 - 15 Juli 2025</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

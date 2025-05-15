@@ -1,0 +1,175 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Hasil Seleksi PPDB</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#generateModal">
+                <i class="fas fa-cog me-1"></i> Generate Hasil
+            </button>
+            <a href="{{ url_for('admin.export_hasil_seleksi') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i> Export Excel
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <select class="form-select" id="filterJurusan">
+            <option value="">Semua Jurusan</option>
+            {% for jurusan in jurusan_list %}
+            <option value="{{ jurusan.id }}" {{ 'selected' if request.args.get('jurusan') == jurusan.id|string }}>
+                {{ jurusan.nama }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filterStatus">
+            <option value="">Semua Status</option>
+            <option value="Diterima" {{ 'selected' if request.args.get('status') == 'Diterima' }}>Diterima</option>
+            <option value="Tidak Diterima" {{ 'selected' if request.args.get('status') == 'Tidak Diterima' }}>Tidak Diterima</option>
+            <option value="Proses" {{ 'selected' if request.args.get('status') == 'Proses' }}>Proses</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <div class="input-group">
+            <input type="text" class="form-control" id="searchInput" 
+                   placeholder="Cari nama/NISN..." value="{{ request.args.get('q', '') }}">
+            <button class="btn btn-outline-secondary" type="button" id="searchBtn">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>No. Pendaftaran</th>
+                        <th>Nama Lengkap</th>
+                        <th>NISN</th>
+                        <th>Jurusan</th>
+                        <th>Nilai</th>
+                        <th>Status</th>
+                        <th>Daftar Ulang</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hasil in hasil_list.items %}
+                    <tr>
+                        <td>{{ hasil.no_pendaftaran }}</td>
+                        <td>{{ hasil.nama_lengkap }}</td>
+                        <td>{{ hasil.nisn }}</td>
+                        <td>{{ hasil.program_keahlian }}</td>
+                        <td>{{ "%.2f"|format(hasil.nilai_rata_rata) }}</td>
+                        <td>
+                            <span class="badge bg-{{ status_colors[hasil.status] }}">
+                                {{ hasil.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if hasil.status == 'Diterima' %}
+                                {% if hasil.status_daftar_ulang %}
+                                    <span class="badge bg-success">Sudah</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Belum</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info me-1" onclick="viewDetail('{{ hasil.id }}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary me-1" onclick="editStatus('{{ hasil.id }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {{ pagination.links | safe }}
+    </div>
+</div>
+
+<!-- Generate Results Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Generate Hasil Seleksi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="generateForm" method="POST" action="{{ url_for('admin.generate_hasil') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Pilih Jurusan</label>
+                        <select name="jurusan_id" class="form-select" required>
+                            {% for jurusan in jurusan_list %}
+                            <option value="{{ jurusan.id }}">{{ jurusan.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kuota Penerimaan</label>
+                        <input type="number" name="kuota" class="form-control" required>
+                    </div>
+                    <div class="form-text mb-3">
+                        Sistem akan mengurutkan pendaftar berdasarkan nilai dan menggenerate hasil seleksi sesuai kuota.
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Generate Hasil</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Filter handling
+document.getElementById('filterJurusan').addEventListener('change', updateFilters);
+document.getElementById('filterStatus').addEventListener('change', updateFilters);
+document.getElementById('searchBtn').addEventListener('click', updateFilters);
+
+function updateFilters() {
+    const jurusan = document.getElementById('filterJurusan').value;
+    const status = document.getElementById('filterStatus').value;
+    const search = document.getElementById('searchInput').value;
+    
+    let url = new URL(window.location.href);
+    url.searchParams.set('jurusan', jurusan);
+    url.searchParams.set('status', status);
+    url.searchParams.set('q', search);
+    window.location.href = url.toString();
+}
+
+// View detail modal
+function viewDetail(id) {
+    window.location.href = `/admin/hasil-seleksi/${id}`;
+}
+
+// Edit status modal
+function editStatus(id) {
+    window.location.href = `/admin/hasil-seleksi/${id}/edit`;
+}
+</script>
+{% endblock %}

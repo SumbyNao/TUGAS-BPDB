@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, send_from_directory, current_app, send_file
 from flask_login import login_required, current_user
 from functools import wraps
-from app.models import Pendaftar, Berkas, User, Pembayaran
+from app.models import Pendaftaran, Berkas, User, Pembayaran
+from app.admin.forms import FilterPendaftarForm  # Add this import
 from app import db
 from datetime import datetime
 import pandas as pd
@@ -24,57 +25,87 @@ def admin_required(f):
 def dashboard():
     stats = {
         'total_users': User.query.count(),
-        'total_pendaftar': Pendaftar.query.count(),
-        'menunggu_verifikasi': Pendaftar.query.filter_by(status='Menunggu').count(),
-        'terverifikasi': Pendaftar.query.filter_by(status='Diverifikasi').count(),
-        'ditolak': Pendaftar.query.filter_by(status='Ditolak').count()
+        'total_pendaftar': Pendaftaran.query.count(),
+        'menunggu_verifikasi': Pendaftaran.query.filter_by(status='Menunggu').count(),
+        'terverifikasi': Pendaftaran.query.filter_by(status='Diverifikasi').count(),
+        'ditolak': Pendaftaran.query.filter_by(status='Ditolak').count()
     }
-    # Get latest 5 pendaftars
-    pendaftars = Pendaftar.query.order_by(Pendaftar.created_at.desc()).limit(5).all()
+    pendaftars = Pendaftaran.query.order_by(Pendaftaran.created_at.desc()).limit(5).all()
     return render_template('admin/dashboard.html', stats=stats, pendaftars=pendaftars)
 
-@admin_bp.route('/verifikasi/<int:pendaftar_id>')
+# Pendaftar Management Routes
+@admin_bp.route('/pendaftar')
 @admin_required
-def verifikasi(pendaftar_id):
-    pendaftar = Pendaftar.query.get_or_404(pendaftar_id)
+def list_pendaftar():
+    form = FilterPendaftarForm()
+    query = Pendaftaran.query
+    
+    if form.validate():
+        if form.jalur.data:
+            query = query.filter_by(jalur_pendaftaran=form.jalur.data)
+        if form.jurusan.data:
+            query = query.filter_by(jurusan_pilihan=form.jurusan.data)
+        if form.status.data:
+            query = query.filter_by(status=form.status.data)
+        if form.asal_sekolah.data:
+            query = query.filter(Pendaftaran.asal_sekolah.ilike(f'%{form.asal_sekolah.data}%'))
+        if form.tanggal_awal.data:
+            query = query.filter(Pendaftaran.created_at >= form.tanggal_awal.data)
+        if form.tanggal_akhir.data:
+            query = query.filter(Pendaftaran.created_at <= form.tanggal_akhir.data)
+        if form.search.data:
+            search = f"%{form.search.data}%"
+            query = query.filter(
+                db.or_(
+                    Pendaftaran.nisn.ilike(search),
+                    Pendaftaran.nama_lengkap.ilike(search)
+                )
+            )
+    
+    pendaftars = query.order_by(Pendaftaran.created_at.desc()).all()
+    return render_template('admin/list_pendaftar.html', 
+                         form=form, 
+                         pendaftars=pendaftars)
+
+@admin_bp.route('/pendaftar/<int:id>')
+@admin_required
+def detail_pendaftar(id):
+    pendaftar = Pendaftaran.query.get_or_404(id)
+    return render_template('admin/detail_pendaftar.html', pendaftar=pendaftar)
+
+@admin_bp.route('/pendaftar/<int:id>/verifikasi', methods=['POST'])
+@admin_required
+def verifikasi_pendaftar(id):
+    pendaftar = Pendaftaran.query.get_or_404(id)
     pendaftar.status = 'Diverifikasi'
     db.session.commit()
-    flash(f"Pendaftar {pendaftar.nama_lengkap} berhasil diverifikasi.", 'success')
-    return redirect(url_for('admin.dashboard'))
+    flash(f'Pendaftar {pendaftar.nama_lengkap} telah diverifikasi.', 'success')
+    return redirect(url_for('admin.list_pendaftar'))
 
-@admin_bp.route('/hapus/<int:pendaftar_id>')
+@admin_bp.route('/pendaftar/<int:id>/tolak', methods=['POST'])
 @admin_required
-def hapus(pendaftar_id):
-    pendaftar = Pendaftar.query.get_or_404(pendaftar_id)
+def tolak_pendaftar(id):
+    pendaftar = Pendaftaran.query.get_or_404(id)
+    alasan = request.form.get('alasan')
+    pendaftar.status = 'Ditolak'
+    pendaftar.alasan_penolakan = alasan
+    db.session.commit()
+    flash(f'Pendaftaran {pendaftar.nama_lengkap} ditolak.', 'warning')
+    return redirect(url_for('admin.list_pendaftar'))
+
+@admin_bp.route('/pendaftar/<int:id>/hapus', methods=['POST'])
+@admin_required
+def hapus_pendaftar(id):
+    pendaftar = Pendaftaran.query.get_or_404(id)
     berkas = Berkas.query.filter_by(pendaftar_id=pendaftar.id).first()
     if berkas:
         db.session.delete(berkas)
     db.session.delete(pendaftar)
     db.session.commit()
     flash(f"Pendaftar {pendaftar.nama_lengkap} berhasil dihapus.", 'warning')
-    return redirect(url_for('admin.dashboard'))
-
-@admin_bp.route('/pendaftar')
-@admin_required
-def list_pendaftar():
-    pendaftars = Pendaftar.query.all()
-    return render_template('admin/list_pendaftar.html', pendaftars=pendaftars)
-
-@admin_bp.route('/pendaftar/<int:id>')
-@admin_required
-def detail_pendaftar(id):
-    pendaftar = Pendaftar.query.get_or_404(id)
-    return render_template('admin/detail_pendaftar.html', pendaftar=pendaftar)
-
-@admin_bp.route('/pendaftar/<int:id>/verifikasi', methods=['POST'])
-@admin_required
-def verifikasi_pendaftar(id):
-    pendaftar = Pendaftar.query.get_or_404(id)
-    pendaftar.status = 'Diverifikasi'
-    db.session.commit()
-    flash(f'Pendaftar {pendaftar.nama_lengkap} telah diverifikasi.', 'success')
     return redirect(url_for('admin.list_pendaftar'))
 
+# Berkas Management Routes
 @admin_bp.route('/berkas')
 @admin_required
 def list_berkas():
@@ -101,12 +132,13 @@ def tolak_berkas(berkas_id):
     flash(f'Berkas {berkas.jenis_berkas} telah ditolak.', 'warning')
     return jsonify({'status': 'success'})
 
-@admin_bp.route('/berkas/<int:berkas_id>')
+@admin_bp.route('/berkas/<int:berkas_id>/view')
 @admin_required
 def lihat_berkas(berkas_id):
     berkas = Berkas.query.get_or_404(berkas_id)
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], berkas.nama_file)
 
+# Pembayaran Management Routes
 @admin_bp.route('/pembayaran')
 @admin_required
 def list_pembayaran():
@@ -141,53 +173,20 @@ def lihat_bukti(pembayaran_id):
     pembayaran = Pembayaran.query.get_or_404(pembayaran_id)
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], pembayaran.bukti_pembayaran)
 
-@admin_bp.route('/list-pendaftar')
-@admin_required
-def list_pendaftar():
-    pendaftars = Pendaftar.query.order_by(Pendaftar.created_at.desc()).all()
-    return render_template('admin/list_pendaftar.html', pendaftars=pendaftars)
-
-@admin_bp.route('/detail-pendaftar/<int:id>')
-@admin_required
-def detail_pendaftar(id):
-    pendaftar = Pendaftar.query.get_or_404(id)
-    return render_template('admin/detail_pendaftar.html', pendaftar=pendaftar)
-
-@admin_bp.route('/verifikasi-pendaftar/<int:id>', methods=['POST'])
-@admin_required
-def verifikasi_pendaftar(id):
-    pendaftar = Pendaftar.query.get_or_404(id)
-    pendaftar.status = 'Diverifikasi'
-    db.session.commit()
-    flash(f'Pendaftaran {pendaftar.nama_lengkap} berhasil diverifikasi.', 'success')
-    return redirect(url_for('admin.list_pendaftar'))
-
-@admin_bp.route('/tolak-pendaftar/<int:id>', methods=['POST'])
-@admin_required
-def tolak_pendaftar(id):
-    pendaftar = Pendaftar.query.get_or_404(id)
-    alasan = request.form.get('alasan')
-    pendaftar.status = 'Ditolak'
-    pendaftar.alasan_penolakan = alasan
-    db.session.commit()
-    flash(f'Pendaftaran {pendaftar.nama_lengkap} ditolak.', 'warning')
-    return redirect(url_for('admin.list_pendaftar'))
-
+# Statistics and Export Routes
 @admin_bp.route('/statistik')
 @admin_required
 def statistik():
-    # Statistik per jurusan
     jurusan_stats = db.session.query(
-        Pendaftar.jurusan_pilihan,
-        db.func.count(Pendaftar.id).label('total'),
-        db.func.sum(db.case([(Pendaftar.status == 'Diverifikasi', 1)], else_=0)).label('diterima')
-    ).group_by(Pendaftar.jurusan_pilihan).all()
+        Pendaftaran.jurusan_pilihan,
+        db.func.count(Pendaftaran.id).label('total'),
+        db.func.sum(db.case([(Pendaftaran.status == 'Diverifikasi', 1)], else_=0)).label('diterima')
+    ).group_by(Pendaftaran.jurusan_pilihan).all()
     
-    # Statistik per jalur pendaftaran
     jalur_stats = db.session.query(
-        Pendaftar.jalur_pendaftaran,
-        db.func.count(Pendaftar.id).label('total')
-    ).group_by(Pendaftar.jalur_pendaftaran).all()
+        Pendaftaran.jalur_pendaftaran,
+        db.func.count(Pendaftaran.id).label('total')
+    ).group_by(Pendaftaran.jalur_pendaftaran).all()
     
     return render_template('admin/statistik.html', 
                          jurusan_stats=jurusan_stats,
@@ -196,7 +195,7 @@ def statistik():
 @admin_bp.route('/export-data')
 @admin_required
 def export_data():
-    pendaftars = Pendaftar.query.all()
+    pendaftars = Pendaftaran.query.all()
     data = []
     
     for p in pendaftars:

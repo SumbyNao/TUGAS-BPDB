@@ -1,142 +1,146 @@
-{% extends 'base.html' %}
+{% extends "admin/base.html" %}
 
-{% block title %}Data Pembayaran{% endblock %}
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Manajemen Pembayaran</h1>
+</div>
 
-{% block styles %}
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
-{% endblock %}
-
-{% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-money-bill me-2"></i>Data Pembayaran</h2>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item active">Data Pembayaran</li>
-            </ol>
-        </nav>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="pembayaranTable">
+                <thead>
+                    <tr>
+                        <th>NISN</th>
+                        <th>Nama Pendaftar</th>
+                        <th>Jumlah</th>
+                        <th>Metode</th>
+                        <th>Status</th>
+                        <th>Tanggal Bayar</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pembayaran in pembayaran_list %}
+                    <tr>
+                        <td>{{ pembayaran.pendaftar.nisn }}</td>
+                        <td>{{ pembayaran.pendaftar.nama_lengkap }}</td>
+                        <td>Rp {{ "{:,.0f}".format(pembayaran.jumlah) }}</td>
+                        <td>{{ pembayaran.metode_pembayaran|title }}</td>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'warning' if pembayaran.status == 'Menunggu' 
+                                else 'success' if pembayaran.status == 'Diverifikasi' 
+                                else 'danger' 
+                            }}">
+                                {{ pembayaran.status }}
+                            </span>
+                        </td>
+                        <td>{{ pembayaran.tanggal_bayar.strftime('%d-%m-%Y %H:%M') }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{{ url_for('admin.lihat_bukti', pembayaran_id=pembayaran.id) }}" 
+                                   class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-eye"></i> Bukti
+                                </a>
+                                {% if pembayaran.status == 'Menunggu' %}
+                                <button type="button" 
+                                        class="btn btn-sm btn-success"
+                                        onclick="verifikasiPembayaran({{ pembayaran.id }})">
+                                    <i class="fas fa-check"></i> Verifikasi
+                                </button>
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger"
+                                        onclick="tolakPembayaran({{ pembayaran.id }})">
+                                    <i class="fas fa-times"></i> Tolak
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+</div>
 
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="tablePembayaran">
-                    <thead>
-                        <tr>
-                            <th>NISN</th>
-                            <th>Nama Pendaftar</th>
-                            <th>Jumlah</th>
-                            <th>Tanggal Bayar</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for bayar in pembayaran_list %}
-                        <tr>
-                            <td>{{ bayar.pendaftar.nisn }}</td>
-                            <td>{{ bayar.pendaftar.nama_lengkap }}</td>
-                            <td>Rp {{ "{:,}".format(bayar.jumlah) }}</td>
-                            <td>{{ bayar.tanggal_bayar.strftime('%d-%m-%Y %H:%M') }}</td>
-                            <td>
-                                <span class="badge {% if bayar.status == 'Diverifikasi' %}bg-success
-                                      {% elif bayar.status == 'Ditolak' %}bg-danger
-                                      {% else %}bg-warning{% endif %}">
-                                    {{ bayar.status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{{ url_for('admin.lihat_bukti', pembayaran_id=bayar.id) }}" 
-                                       class="btn btn-sm btn-info" target="_blank">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    {% if bayar.status != 'Diverifikasi' %}
-                                    <button onclick="verifikasiPembayaran({{ bayar.id }})" 
-                                            class="btn btn-sm btn-success">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    {% endif %}
-                                    <button onclick="tolakPembayaran({{ bayar.id }})" 
-                                            class="btn btn-sm btn-danger">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<!-- Modal Tolak -->
+<div class="modal fade" id="tolakModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tolak Pembayaran</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tolakForm">
+                    <div class="mb-3">
+                        <label class="form-label">Alasan Penolakan</label>
+                        <textarea class="form-control" name="alasan" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="submitTolak()">Tolak</button>
             </div>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
 {% block scripts %}
-<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{{ super() }}
+<script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap5.min.js"></script>
 <script>
 $(document).ready(function() {
-    $('#tablePembayaran').DataTable({
+    $('#pembayaranTable').DataTable({
+        order: [[5, 'desc']],
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/id.json'
+            url: '//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json'
         }
     });
 });
 
+let pembayaranId;
+
 function verifikasiPembayaran(id) {
-    Swal.fire({
-        title: 'Verifikasi Pembayaran',
-        text: "Apakah bukti pembayaran sudah sesuai?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#28a745',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Ya, Verifikasi',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/pembayaran/${id}/verifikasi`, {
-                method: 'POST'
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    });
+    if (confirm('Verifikasi pembayaran ini?')) {
+        fetch(`/admin/pembayaran/${id}/verifikasi`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(() => location.reload());
+    }
 }
 
 function tolakPembayaran(id) {
-    Swal.fire({
-        title: 'Tolak Pembayaran',
-        text: 'Masukkan alasan penolakan:',
-        input: 'textarea',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Tolak',
-        cancelButtonText: 'Batal'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/admin/pembayaran/${id}/tolak`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    alasan: result.value
-                })
-            }).then(response => {
-                if (response.ok) {
-                    location.reload();
-                }
-            });
-        }
-    });
+    pembayaranId = id;
+    const modal = new bootstrap.Modal(document.getElementById('tolakModal'));
+    modal.show();
+}
+
+function submitTolak() {
+    const form = document.getElementById('tolakForm');
+    const formData = new FormData(form);
+    const data = {
+        alasan: formData.get('alasan')
+    };
+    
+    fetch(`/admin/pembayaran/${pembayaranId}/tolak`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    }).then(() => location.reload());
 }
 </script>
 {% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap5.min.css">
 {% endblock %}

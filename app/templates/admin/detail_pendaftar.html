@@ -1,95 +1,208 @@
-{% extends 'base.html' %}
+{% extends "admin/base.html" %}
 
-{% block title %}Detail Pendaftar{% endblock %}
-
-{% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-user me-2"></i>Detail Pendaftar</h2>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('admin.list_pendaftar') }}">Data Pendaftar</a></li>
-                <li class="breadcrumb-item active">Detail</li>
-            </ol>
-        </nav>
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Detail Pendaftar</h1>
+    <div class="btn-toolbar">
+        <a href="{{ url_for('admin.list_pendaftar') }}" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </a>
+        {% if pendaftar.status == 'Menunggu' %}
+        <button class="btn btn-success me-2" onclick="verifikasiPendaftar({{ pendaftar.id }})">
+            <i class="fas fa-check"></i> Verifikasi
+        </button>
+        <button class="btn btn-danger" onclick="tolakPendaftar({{ pendaftar.id }})">
+            <i class="fas fa-times"></i> Tolak
+        </button>
+        {% endif %}
     </div>
+</div>
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Data Pribadi</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>NISN</strong></div>
-                        <div class="col-md-8">{{ pendaftar.nisn }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>Nama Lengkap</strong></div>
-                        <div class="col-md-8">{{ pendaftar.nama_lengkap }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>TTL</strong></div>
-                        <div class="col-md-8">{{ pendaftar.tempat_lahir }}, {{ pendaftar.tanggal_lahir.strftime('%d-%m-%Y') }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>Jenis Kelamin</strong></div>
-                        <div class="col-md-8">{{ 'Laki-laki' if pendaftar.jenis_kelamin == 'L' else 'Perempuan' }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>Agama</strong></div>
-                        <div class="col-md-8">{{ pendaftar.agama }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>Alamat</strong></div>
-                        <div class="col-md-8">{{ pendaftar.alamat }}</div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><strong>No. HP</strong></div>
-                        <div class="col-md-8">{{ pendaftar.no_hp }}</div>
-                    </div>
-                </div>
+<div class="row">
+    <!-- Data Pribadi -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Data Pribadi</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th width="30%">NISN</th>
+                        <td>{{ pendaftar.nisn }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nama Lengkap</th>
+                        <td>{{ pendaftar.nama_lengkap }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tempat, Tanggal Lahir</th>
+                        <td>{{ pendaftar.tempat_lahir }}, {{ pendaftar.tanggal_lahir.strftime('%d-%m-%Y') }}</td>
+                    </tr>
+                    <tr>
+                        <th>Jenis Kelamin</th>
+                        <td>{{ 'Laki-laki' if pendaftar.jenis_kelamin == 'L' else 'Perempuan' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Agama</th>
+                        <td>{{ pendaftar.agama }}</td>
+                    </tr>
+                    <tr>
+                        <th>Alamat</th>
+                        <td>{{ pendaftar.alamat }}</td>
+                    </tr>
+                    <tr>
+                        <th>No. HP</th>
+                        <td>{{ pendaftar.no_hp }}</td>
+                    </tr>
+                </table>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Status Pendaftaran</h5>
-                </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <span class="badge {% if pendaftar.status == 'Diverifikasi' %}bg-success
-                              {% elif pendaftar.status == 'Ditolak' %}bg-danger
-                              {% else %}bg-warning{% endif %} fs-5">
-                            {{ pendaftar.status }}
-                        </span>
-                    </div>
-                    {% if pendaftar.status != 'Diverifikasi' %}
-                    <form action="{{ url_for('admin.verifikasi_pendaftar', id=pendaftar.id) }}" method="POST">
-                        <button type="submit" class="btn btn-success w-100 mb-2">
-                            <i class="fas fa-check me-2"></i>Verifikasi
-                        </button>
-                    </form>
-                    {% endif %}
-                    <button onclick="hapusPendaftar({{ pendaftar.id }})" class="btn btn-danger w-100">
-                        <i class="fas fa-trash me-2"></i>Hapus
-                    </button>
+    <!-- Data Pendaftaran -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Data Pendaftaran</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th width="30%">Asal Sekolah</th>
+                        <td>{{ pendaftar.asal_sekolah }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nilai UN</th>
+                        <td>{{ pendaftar.nilai_un }}</td>
+                    </tr>
+                    <tr>
+                        <th>Jurusan Pilihan</th>
+                        <td>{{ pendaftar.jurusan_pilihan }}</td>
+                    </tr>
+                    <tr>
+                        <th>Jalur Pendaftaran</th>
+                        <td>{{ pendaftar.jalur_pendaftaran }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'warning' if pendaftar.status == 'Menunggu' 
+                                else 'success' if pendaftar.status == 'Diverifikasi' 
+                                else 'danger' 
+                            }}">
+                                {{ pendaftar.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Tanggal Daftar</th>
+                        <td>{{ pendaftar.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Berkas -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Berkas</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Jenis Berkas</th>
+                                <th>Status</th>
+                                <th>Tanggal Upload</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for berkas in pendaftar.berkas %}
+                            <tr>
+                                <td>{{ berkas.jenis_berkas|title }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 
+                                        'warning' if berkas.status == 'Menunggu' 
+                                        else 'success' if berkas.status == 'Diverifikasi' 
+                                        else 'danger' 
+                                    }}">
+                                        {{ berkas.status }}
+                                    </span>
+                                </td>
+                                <td>{{ berkas.uploaded_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('admin.lihat_berkas', berkas_id=berkas.id) }}" 
+                                       class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="fas fa-eye"></i> Lihat
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal Tolak -->
+<div class="modal fade" id="tolakModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tolak Pendaftar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="tolakForm">
+                    <div class="mb-3">
+                        <label class="form-label">Alasan Penolakan</label>
+                        <textarea class="form-control" name="alasan" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="submitTolak()">Tolak</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
 {% block scripts %}
+{{ super() }}
 <script>
-function hapusPendaftar(id) {
-    if(confirm('Apakah Anda yakin ingin menghapus data pendaftar ini?')) {
-        window.location.href = "{{ url_for('admin.hapus', pendaftar_id=0) }}".replace('0', id);
+function verifikasiPendaftar(id) {
+    if (confirm('Verifikasi pendaftar ini?')) {
+        fetch(`/admin/pendaftar/${id}/verifikasi`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        }).then(() => location.reload());
     }
 }
+
+function tolakPendaftar(id) {
+    const modal = new bootstrap.Modal(document.getElementById('tolakModal'));
+    modal.show();
+}
+
+function submitTolak() {
+    const form = document.getElementById('tolakForm');
+    const formData = new FormData(form);
+    
+    fetch(`/admin/pendaftar/{{ pendaftar.id }}/tolak`, {
+        method: 'POST',
+        body: formData
+    }).then(() => location.reload());
+}
 </script>
-{% endblock %}
 {% endblock %}

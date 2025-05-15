@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Seleksi PPDB - SMK NEGERI 1{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Status Card -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h4 class="card-title mb-4">Status Seleksi PPDB</h4>
+                    {% if hasil %}
+                        {% if hasil.status == 'Diterima' %}
+                            <div class="display-1 text-success mb-3">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <h3 class="text-success mb-3">SELAMAT! ANDA DITERIMA</h3>
+                        {% elif hasil.status == 'Tidak Diterima' %}
+                            <div class="display-1 text-danger mb-3">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <h3 class="text-danger mb-3">Mohon Maaf, Anda Tidak Diterima</h3>
+                        {% else %}
+                            <div class="display-1 text-warning mb-3">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 class="text-warning mb-3">Dalam Proses Seleksi</h3>
+                        {% endif %}
+                    {% else %}
+                        <div class="display-1 text-muted mb-3">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <h3 class="text-muted mb-3">Data Tidak Ditemukan</h3>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Detail Information -->
+            {% if hasil %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Detail Hasil Seleksi</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <tr>
+                            <th width="35%">Nomor Pendaftaran</th>
+                            <td>{{ hasil.no_pendaftaran }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nama Lengkap</th>
+                            <td>{{ hasil.nama_lengkap }}</td>
+                        </tr>
+                        <tr>
+                            <th>NISN</th>
+                            <td>{{ hasil.nisn }}</td>
+                        </tr>
+                        <tr>
+                            <th>Asal Sekolah</th>
+                            <td>{{ hasil.asal_sekolah }}</td>
+                        </tr>
+                        <tr>
+                            <th>Jalur Pendaftaran</th>
+                            <td>{{ hasil.jalur_pendaftaran }}</td>
+                        </tr>
+                        <tr>
+                            <th>Program Keahlian</th>
+                            <td>{{ hasil.program_keahlian }}</td>
+                        </tr>
+                        <tr>
+                            <th>Nilai Rata-rata</th>
+                            <td>{{ "%.2f"|format(hasil.nilai_rata_rata) }}</td>
+                        </tr>
+                        {% if hasil.status == 'Diterima' %}
+                        <tr>
+                            <th>Daftar Ulang</th>
+                            <td>
+                                {% if hasil.status_daftar_ulang %}
+                                    <span class="badge bg-success">Sudah Daftar Ulang</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Belum Daftar Ulang</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </table>
+
+                    {% if hasil.status == 'Diterima' and not hasil.status_daftar_ulang %}
+                        <div class="alert alert-warning">
+                            <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Perhatian!</h5>
+                            <p class="mb-0">Silakan melakukan daftar ulang sebelum tanggal {{ batas_daftar_ulang.strftime('%d %B %Y') }}. 
+                            Jika tidak melakukan daftar ulang sampai batas waktu yang ditentukan, maka dianggap mengundurkan diri.</p>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('ppdb.daftar_ulang') }}" class="btn btn-primary">
+                                <i class="fas fa-clipboard-check me-2"></i>Daftar Ulang Sekarang
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

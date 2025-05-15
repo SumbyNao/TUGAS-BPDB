@@ -1,0 +1,180 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Manajemen Pengumuman</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAnnouncementModal">
+            <i class="fas fa-plus me-2"></i>Tambah Pengumuman
+        </button>
+    </div>
+</div>
+
+<!-- Announcement List -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="pengumumanTable">
+                <thead>
+                    <tr>
+                        <th>Judul</th>
+                        <th>Kategori</th>
+                        <th>Status</th>
+                        <th>Tanggal Publikasi</th>
+                        <th>Terakhir Diubah</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pengumuman in pengumuman_list %}
+                    <tr>
+                        <td>{{ pengumuman.judul }}</td>
+                        <td>
+                            <span class="badge bg-{{ pengumuman.kategori_color }}">
+                                {{ pengumuman.kategori }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input status-toggle" type="checkbox" 
+                                       data-id="{{ pengumuman.id }}"
+                                       {{ 'checked' if pengumuman.is_published }}>
+                            </div>
+                        </td>
+                        <td>{{ pengumuman.publish_date.strftime('%d-%m-%Y %H:%M') if pengumuman.publish_date }}</td>
+                        <td>{{ pengumuman.updated_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info me-1" 
+                                    onclick="viewAnnouncement({{ pengumuman.id }})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary me-1" 
+                                    onclick="editAnnouncement({{ pengumuman.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" 
+                                    onclick="deleteAnnouncement({{ pengumuman.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Announcement Modal -->
+<div class="modal fade" id="announcementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Tambah Pengumuman</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="announcementForm" method="POST">
+                <div class="modal-body">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.judul.label(class="form-label") }}
+                        {{ form.judul(class="form-control") }}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.kategori.label(class="form-label") }}
+                            {{ form.kategori(class="form-select") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.publish_date.label(class="form-label") }}
+                            {{ form.publish_date(class="form-control", type="datetime-local") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.konten.label(class="form-label") }}
+                        {{ form.konten(class="form-control", rows="10") }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Announcement Modal -->
+<div class="modal fade" id="viewAnnouncementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="viewContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+function viewAnnouncement(id) {
+    fetch(`/admin/pengumuman/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('viewTitle').textContent = data.judul;
+            document.getElementById('viewContent').innerHTML = data.konten;
+            new bootstrap.Modal(document.getElementById('viewAnnouncementModal')).show();
+        });
+}
+
+function editAnnouncement(id) {
+    fetch(`/admin/pengumuman/${id}/edit`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('modalTitle').textContent = 'Edit Pengumuman';
+            document.getElementById('announcementForm').action = `/admin/pengumuman/${id}/edit`;
+            document.getElementById('judul').value = data.judul;
+            document.getElementById('kategori').value = data.kategori;
+            document.getElementById('publish_date').value = data.publish_date;
+            document.getElementById('konten').value = data.konten;
+            new bootstrap.Modal(document.getElementById('announcementModal')).show();
+        });
+}
+
+function deleteAnnouncement(id) {
+    if (confirm('Apakah Anda yakin ingin menghapus pengumuman ini?')) {
+        fetch(`/admin/pengumuman/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name=csrf_token]').value
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+}
+
+// Status toggle handling
+document.querySelectorAll('.status-toggle').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+        fetch(`/admin/pengumuman/${this.dataset.id}/toggle`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('input[name=csrf_token]').value
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
