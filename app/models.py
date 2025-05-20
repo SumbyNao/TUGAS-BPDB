@@ -13,12 +13,13 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     nama_lengkap = db.Column(db.String(100), nullable=False)
     no_hp = db.Column(db.String(15))
-    role = db.Column(db.String(20), default='user')  
+    role = db.Column(db.String(20), default='user')
     is_active = db.Column(db.Boolean, default=True)
     profile_picture = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     last_ip = db.Column(db.String(45))
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     
     pendaftaran = db.relationship('Pendaftaran', backref='user', uselist=False)
 
@@ -27,6 +28,10 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
 
 class Pendaftaran(db.Model):
     id = db.Column(db.Integer, primary_key=True)

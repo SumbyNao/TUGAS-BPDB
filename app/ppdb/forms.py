@@ -1,8 +1,14 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import StringField, SelectField, DateField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Length, Email, Optional, ValidationError
-from app.models import Pendaftaran  
+from wtforms import StringField, SelectField, DateField, TextAreaField, SubmitField, FloatField
+from wtforms.validators import DataRequired, Length, Email, Optional, ValidationError, NumberRange
+
+# Pilihan jurusan
+JURUSAN_CHOICES = [
+    ('RPL', 'Rekayasa Perangkat Lunak'),
+    ('TKJ', 'Teknik Komputer dan Jaringan'),
+    ('MM', 'Multimedia'),
+]
 
 class FormulirPPDB(FlaskForm):
     nisn = StringField('NISN', 
@@ -24,8 +30,8 @@ class FormulirPPDB(FlaskForm):
         ]
     )
     jenis_kelamin = SelectField('Jenis Kelamin', 
-                              choices=[('L', 'Laki-laki'), ('P', 'Perempuan')],
-                              validators=[DataRequired(message='Jenis kelamin harus dipilih')]
+        choices=[('L', 'Laki-laki'), ('P', 'Perempuan')],
+        validators=[DataRequired(message='Jenis kelamin harus dipilih')]
     )
     tempat_lahir = StringField('Tempat Lahir', 
         validators=[
@@ -37,15 +43,15 @@ class FormulirPPDB(FlaskForm):
         validators=[DataRequired(message='Tanggal lahir harus diisi')]
     )
     agama = SelectField('Agama', 
-                       choices=[
-                           ('Islam', 'Islam'),
-                           ('Kristen', 'Kristen'),
-                           ('Katolik', 'Katolik'),
-                           ('Hindu', 'Hindu'),
-                           ('Buddha', 'Buddha'),
-                           ('Konghucu', 'Konghucu')
-                       ],
-                       validators=[DataRequired(message='Agama harus dipilih')]
+        choices=[
+            ('Islam', 'Islam'),
+            ('Kristen', 'Kristen'),
+            ('Katolik', 'Katolik'),
+            ('Hindu', 'Hindu'),
+            ('Buddha', 'Buddha'),
+            ('Konghucu', 'Konghucu')
+        ],
+        validators=[DataRequired(message='Agama harus dipilih')]
     )
     alamat = TextAreaField('Alamat', 
         validators=[
@@ -66,19 +72,13 @@ class FormulirPPDB(FlaskForm):
         ]
     )
     kelurahan = StringField('Kelurahan/Desa', 
-        validators=[
-            DataRequired(message='Kelurahan/Desa harus diisi')
-        ]
+        validators=[DataRequired(message='Kelurahan/Desa harus diisi')]
     )
     kecamatan = StringField('Kecamatan', 
-        validators=[
-            DataRequired(message='Kecamatan harus diisi')
-        ]
+        validators=[DataRequired(message='Kecamatan harus diisi')]
     )
     kota = StringField('Kota/Kabupaten', 
-        validators=[
-            DataRequired(message='Kota/Kabupaten harus diisi')
-        ]
+        validators=[DataRequired(message='Kota/Kabupaten harus diisi')]
     )
     kode_pos = StringField('Kode Pos', 
         validators=[
@@ -92,26 +92,18 @@ class FormulirPPDB(FlaskForm):
             Length(max=15, message='Nomor HP maksimal 15 karakter')
         ]
     )
-    
+
     nama_ayah = StringField('Nama Ayah', 
-        validators=[
-            DataRequired(message='Nama Ayah harus diisi')
-        ]
+        validators=[DataRequired(message='Nama Ayah harus diisi')]
     )
     pekerjaan_ayah = StringField('Pekerjaan Ayah', 
-        validators=[
-            DataRequired(message='Pekerjaan Ayah harus diisi')
-        ]
+        validators=[DataRequired(message='Pekerjaan Ayah harus diisi')]
     )
     nama_ibu = StringField('Nama Ibu', 
-        validators=[
-            DataRequired(message='Nama Ibu harus diisi')
-        ]
+        validators=[DataRequired(message='Nama Ibu harus diisi')]
     )
     pekerjaan_ibu = StringField('Pekerjaan Ibu', 
-        validators=[
-            DataRequired(message='Pekerjaan Ibu harus diisi')
-        ]
+        validators=[DataRequired(message='Pekerjaan Ibu harus diisi')]
     )
     no_hp_ortu = StringField('No. HP Orang Tua', 
         validators=[
@@ -119,11 +111,9 @@ class FormulirPPDB(FlaskForm):
             Length(max=15, message='Nomor HP Orang Tua maksimal 15 karakter')
         ]
     )
-    
+
     asal_sekolah = StringField('Asal Sekolah', 
-        validators=[
-            DataRequired(message='Asal sekolah harus diisi')
-        ]
+        validators=[DataRequired(message='Asal sekolah harus diisi')]
     )
     npsn_sekolah = StringField('NPSN Sekolah', 
         validators=[
@@ -131,33 +121,42 @@ class FormulirPPDB(FlaskForm):
             Length(max=8, message='NPSN sekolah maksimal 8 karakter')
         ]
     )
-    jurusan = SelectField('Pilihan Jurusan', 
+
+    nilai_un = FloatField('Nilai UN', validators=[
+        DataRequired(message='Nilai UN harus diisi'),
+        NumberRange(min=0, max=100, message='Nilai UN harus antara 0 dan 100')
+    ])
+
+    jurusan_pilihan = SelectField('Pilihan Jurusan', 
+        choices=JURUSAN_CHOICES,
         validators=[DataRequired(message='Jurusan harus dipilih')]
     )
+
     jalur_pendaftaran = SelectField('Jalur Pendaftaran',
-                                  choices=[
-                                      ('Reguler', 'Reguler'),
-                                      ('Prestasi', 'Prestasi'),
-                                      ('KIP', 'KIP')
-                                  ],
-                                  validators=[DataRequired(message='Jalur pendaftaran harus dipilih')]
+        choices=[
+            ('Reguler', 'Reguler'),
+            ('Prestasi', 'Prestasi'),
+            ('KIP', 'KIP')
+        ],
+        validators=[DataRequired(message='Jalur pendaftaran harus dipilih')]
     )
+
     submit = SubmitField('Simpan')
 
 class UploadBerkasForm(FlaskForm):
     berkas = FileField('Pilih Berkas', 
-                      validators=[
-                          FileRequired(message='File harus dipilih'),
-                          FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'File harus berupa PDF atau gambar!')
-                      ]
+        validators=[
+            FileRequired(message='File harus dipilih'),
+            FileAllowed(['pdf', 'jpg', 'jpeg', 'png'], 'File harus berupa PDF atau gambar!')
+        ]
     )
     submit = SubmitField('Upload')
 
 class PembayaranForm(FlaskForm):
     bukti_pembayaran = FileField('Upload Bukti Pembayaran',
-                                validators=[
-                                    FileRequired(message='File harus dipilih'),
-                                    FileAllowed(['jpg', 'jpeg', 'png'], 'File harus berupa gambar!')
-                                ]
+        validators=[
+            FileRequired(message='File harus dipilih'),
+            FileAllowed(['jpg', 'jpeg', 'png'], 'File harus berupa gambar!')
+        ]
     )
     submit = SubmitField('Upload Bukti Pembayaran')

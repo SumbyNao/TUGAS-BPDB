@@ -55,6 +55,13 @@ def register():
     
     return render_template('auth/register.html', form=form)
 
+@auth_bp.route('/profile')
+def profile():
+    if not current_user.is_authenticated:
+        flash('Silakan login terlebih dahulu.', 'warning')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/profile.html', user=current_user)
+
 @auth_bp.route('/logout')
 def logout():
     logout_user()

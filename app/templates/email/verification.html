@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Verifikasi Email PPDB</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2 style="color: #007bff;">Verifikasi Email</h2>
+        <p>SMK Karya Bangsa</p>
+    </div>
+
+    <p>Halo {{ user.nama_lengkap }},</p>
+
+    <p>Terima kasih telah mendaftar di PPDB SMK Karya Bangsa. Silakan verifikasi email Anda dengan mengklik tombol di bawah ini:</p>
+
+    <p style="margin: 30px 0; text-align: center;">
+        <a href="{{ verification_url }}" 
+           style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+            Verifikasi Email
+        </a>
+    </p>
+
+    <p>Link ini akan kadaluarsa dalam 24 jam.</p>
+
+    <p>Atau salin link berikut ke browser Anda:</p>
+    <p style="background-color: #f8f9fa; padding: 10px; word-break: break-all;">
+        {{ verification_url }}
+    </p>
+
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+    <p style="color: #666; font-size: 12px;">
+        Email ini dikirim secara otomatis. Mohon tidak membalas email ini.<br>
+        Jika Anda memiliki pertanyaan, silakan hubungi kami di 081345809198.
+    </p>
+</body>
+</html>

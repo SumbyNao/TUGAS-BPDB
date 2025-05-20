@@ -46,7 +46,7 @@ def dashboard():
 @ppdb_bp.route('/formulir', methods=['GET', 'POST'])
 @login_required
 def formulir():
-    if current_user.pendaftar:
+    if current_user.pendaftaran:
         flash('Anda sudah mengisi formulir pendaftaran.', 'info')
         return redirect(url_for('ppdb.dashboard'))
 
@@ -83,14 +83,14 @@ def formulir():
 @ppdb_bp.route('/upload-berkas', methods=['GET', 'POST'])
 @login_required
 def upload_berkas():
-    if not current_user.pendaftar:
+    if not current_user.pendaftaran:
         flash('Silakan isi formulir pendaftaran terlebih dahulu.', 'warning')
         return redirect(url_for('ppdb.formulir'))
 
     form = UploadBerkasForm()
     existing_berkas = {
         berkas.jenis_berkas: berkas 
-        for berkas in Berkas.query.filter_by(pendaftar_id=current_user.pendaftar.id).all()
+        for berkas in Berkas.query.filter_by(pendaftar_id=current_user.pendaftaran.id).all()
     }
 
     if form.validate_on_submit():
@@ -102,7 +102,7 @@ def upload_berkas():
                 file = getattr(form, berkas_type).data
                 if file and allowed_file(file.filename):
                     filename = secure_filename(
-                        f"{current_user.pendaftar.nisn}_{berkas_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{file.filename.rsplit('.', 1)[1].lower()}"
+                        f"{current_user.pendaftaran.nisn}_{berkas_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{file.filename.rsplit('.', 1)[1].lower()}"
                     )
                     
                     # Delete existing file if it exists
@@ -116,7 +116,7 @@ def upload_berkas():
                     # Save new file
                     file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                     berkas = Berkas(
-                        pendaftar_id=current_user.pendaftar.id,
+                        pendaftar_id=current_user.pendaftaran.id,
                         jenis_berkas=berkas_type,
                         nama_file=filename,
                         status='Menunggu',
@@ -144,11 +144,11 @@ def upload_berkas():
 @ppdb_bp.route('/pembayaran', methods=['GET', 'POST'])
 @login_required
 def pembayaran():
-    if not current_user.pendaftar:
+    if not current_user.pendaftaran:
         flash('Silakan isi formulir pendaftaran terlebih dahulu.', 'warning')
         return redirect(url_for('ppdb.formulir'))
         
-    existing_payment = Pembayaran.query.filter_by(pendaftar_id=current_user.pendaftar.id).first()
+    existing_payment = Pembayaran.query.filter_by(pendaftar_id=current_user.pendaftaran.id).first()
     if existing_payment:
         flash('Anda sudah melakukan pembayaran. Silakan tunggu verifikasi.', 'info')
         return redirect(url_for('ppdb.dashboard'))
@@ -159,12 +159,12 @@ def pembayaran():
             bukti = form.bukti_pembayaran.data
             if bukti and allowed_file(bukti.filename):
                 filename = secure_filename(
-                    f"payment_{current_user.pendaftar.nisn}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{bukti.filename.rsplit('.', 1)[1].lower()}"
+                    f"payment_{current_user.pendaftaran.nisn}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{bukti.filename.rsplit('.', 1)[1].lower()}"
                 )
                 bukti.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                 
                 pembayaran = Pembayaran(
-                    pendaftar_id=current_user.pendaftar.id,
+                    pendaftar_id=current_user.pendaftaran.id,
                     jumlah=form.jumlah.data,
                     metode_pembayaran=form.metode_pembayaran.data,
                     bukti_pembayaran=filename,
@@ -187,11 +187,11 @@ def pembayaran():
 @ppdb_bp.route('/status')
 @login_required
 def status():
-    if not current_user.pendaftar:
+    if not current_user.pendaftaran:
         flash('Silakan isi formulir pendaftaran terlebih dahulu.', 'warning')
         return redirect(url_for('ppdb.formulir'))
         
-    pendaftar = current_user.pendaftar
+    pendaftar = current_user.pendaftaran
     berkas = Berkas.query.filter_by(pendaftar_id=pendaftar.id).all()
     pembayaran = Pembayaran.query.filter_by(pendaftar_id=pendaftar.id).first()
     

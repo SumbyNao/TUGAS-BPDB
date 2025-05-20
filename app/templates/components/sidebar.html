@@ -1,0 +1,34 @@
+<div class="position-sticky pt-3">
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'dashboard' }}" href="{{ url_for('admin.dashboard') }}">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'pendaftar' }}" href="{{ url_for('admin.list_pendaftar') }}">
+                <i class="fas fa-users me-2"></i>Data Pendaftar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'berkas' }}" href="{{ url_for('admin.berkas') }}">
+                <i class="fas fa-file-alt me-2"></i>Verifikasi Berkas
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'pembayaran' }}" href="{{ url_for('admin.pembayaran') }}">
+                <i class="fas fa-money-bill me-2"></i>Verifikasi Pembayaran
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'pengumuman' }}" href="{{ url_for('admin.pengumuman') }}">
+                <i class="fas fa-bullhorn me-2"></i>Pengumuman
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ 'active' if active_page == 'hasil' }}" href="{{ url_for('admin.hasil_seleksi') }}">
+                <i class="fas fa-check-circle me-2"></i>Hasil Seleksi
+            </a>
+        </li>
+    </ul>
+</div>

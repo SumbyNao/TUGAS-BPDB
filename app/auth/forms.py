@@ -42,6 +42,3 @@ class RegistrationForm(FlaskForm):
         if user:
             raise ValidationError('Email sudah terdaftar. Silakan gunakan email lain.')
     
-    def validate_nama_lengkap(self, nama_lengkap):
-        if len(nama_lengkap.data.split()) < 2:
-            raise ValidationError('Nama lengkap harus terdiri dari minimal 2 kata')

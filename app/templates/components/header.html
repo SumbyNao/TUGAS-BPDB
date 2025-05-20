@@ -1,0 +1,102 @@
+<header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <!-- Brand -->
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
+                <i class="fas fa-school me-2"></i>PPDB SMK Karya Bangsa
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navigation Items -->
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <!-- Left Menu -->
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.alur_pendaftaran' }}" 
+                           href="{{ url_for('main.alur_pendaftaran') }}">
+                            <i class="fas fa-stream me-1"></i>Alur Pendaftaran
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.info' }}"
+                           href="{{ url_for('main.info') }}">
+                            <i class="fas fa-info-circle me-1"></i>Program Keahlian
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.pengumuman' }}"
+                           href="{{ url_for('main.pengumuman') }}">
+                            <i class="fas fa-bullhorn me-1"></i>Pengumuman
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'main.kontak' }}"
+                           href="{{ url_for('main.kontak') }}">
+                            <i class="fas fa-envelope me-1"></i>Kontak
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Right Menu -->
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.is_admin %}
+                        <!-- Admin Menu -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint.startswith('admin.') }}"
+                               href="{{ url_for('admin.dashboard') }}">
+                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard Admin
+                            </a>
+                        </li>
+                        {% else %}
+                        <!-- Student Menu -->
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if request.endpoint.startswith('ppdb.') }}"
+                               href="{{ url_for('ppdb.dashboard') }}">
+                                <i class="fas fa-user me-1"></i>Dashboard PPDB
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        <!-- User Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i>{{ current_user.nama_lengkap }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('auth.profil') }}">
+                                        <i class="fas fa-user-cog me-2"></i>Profil
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <!-- Login/Register Buttons -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">
+                                <i class="fas fa-sign-in-alt me-1"></i>Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-light text-primary ms-2" href="{{ url_for('auth.register') }}">
+                                <i class="fas fa-user-plus me-1"></i>Daftar
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
