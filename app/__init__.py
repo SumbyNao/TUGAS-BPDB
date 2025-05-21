@@ -15,7 +15,7 @@ mail = Mail()
 login_manager = LoginManager()
 
 # Import model setelah inisialisasi db untuk menghindari circular import
-from app.models import User
+from app.models import User, Pendaftaran, Berkas, Pembayaran, Pengumuman
 
 # Fungsi untuk memuat user login
 @login_manager.user_loader

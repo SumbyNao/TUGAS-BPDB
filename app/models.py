@@ -2,6 +2,22 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from app import db, login_manager
+from sqlalchemy.ext.hybrid import hybrid_property
+from flask.json.provider import DefaultJSONProvider  # Changed from JsonProvider
+from decimal import Decimal
+
+class CustomJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        try:
+            if isinstance(obj, datetime):
+                return obj.strftime('%Y-%m-%d %H:%M:%S')
+            elif isinstance(obj, Decimal):
+                return float(obj)
+            elif hasattr(obj, '__dict__'):
+                return str(obj)
+            return str(obj)
+        except Exception as e:
+            return str(obj)
 
 @login_manager.user_loader
 def load_user(id):
@@ -33,6 +49,25 @@ class User(UserMixin, db.Model):
     def is_admin(self):
         return self.role == 'admin'
 
+    @property
+    def is_verified(self):
+        return bool(self.pendaftaran and self.pendaftaran.status == 'Diverifikasi')
+
+    def update_last_seen(self):
+        self.last_seen = datetime.utcnow()
+        db.session.commit()
+
+    def log_activity(self, action, description, ip_address=None, user_agent=None):
+        log = ActivityLog(
+            user_id=self.id,
+            action=action,
+            description=description,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        db.session.add(log)
+        db.session.commit()
+        
 class Pendaftaran(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -52,6 +87,7 @@ class Pendaftaran(db.Model):
     kota = db.Column(db.String(50))
     kode_pos = db.Column(db.String(5))
     no_hp = db.Column(db.String(15))
+    status = db.Column(db.String(20), nullable=False, default='pending')
     
     # Data Orangtua
     nama_ayah = db.Column(db.String(100))
@@ -65,7 +101,8 @@ class Pendaftaran(db.Model):
     npsn_sekolah = db.Column(db.String(8))
     nilai_rata_rata = db.Column(db.Float)
     jurusan_id = db.Column(db.Integer, db.ForeignKey('jurusan.id'))
-    jalur_pendaftaran = db.Column(db.String(20))  # Reguler/Prestasi/KIP
+    jalur_pendaftaran = db.Column(db.String(20)) 
+    jurusan_pilihan = db.Column(db.String(100))# Reguler/Prestasi/KIP
     
     # Status
     status_pendaftaran = db.Column(db.String(20), default='Draft')  # Draft/Submitted/Verified/Rejected
@@ -77,6 +114,39 @@ class Pendaftaran(db.Model):
     berkas = db.relationship('Berkas', backref='pendaftaran', lazy=True)
     pembayaran = db.relationship('Pembayaran', backref='pendaftaran', lazy=True)
     daftar_ulang = db.relationship('DaftarUlang', backref='pendaftaran', uselist=False)
+
+    @hybrid_property
+    def status_display(self):
+        return self.status.title() if self.status else 'Pending'
+
+    @hybrid_property
+    def is_complete(self):
+        """Check if all required fields are filled"""
+        required_fields = [
+            self.nisn, self.nama_lengkap, self.jenis_kelamin,
+            self.tempat_lahir, self.tanggal_lahir, self.alamat,
+            self.asal_sekolah, self.jurusan_pilihan
+        ]
+        return all(required_fields)
+
+    @hybrid_property
+    def berkas_status(self):
+        """Get overall berkas verification status"""
+        if not self.berkas:
+            return 'Belum Upload'
+        if all(b.status == 'Valid' for b in self.berkas):
+            return 'Lengkap'
+        return 'Belum Lengkap'
+
+    def verify(self, admin_user):
+        """Verify pendaftaran by admin"""
+        self.status = 'Diverifikasi'
+        self.updated_at = datetime.utcnow()
+        admin_user.log_activity(
+            'verify_pendaftaran',
+            f'Memverifikasi pendaftaran {self.no_pendaftaran}'
+        )
+        db.session.commit()
 
 class Jurusan(db.Model):
     id = db.Column(db.Integer, primary_key=True)

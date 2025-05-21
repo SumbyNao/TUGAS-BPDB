@@ -131,6 +131,7 @@
 
 {% block scripts %}
 {{ super() }}
+<!-- Remove duplicate canvas element -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Line chart for pendaftar statistics
@@ -138,28 +139,38 @@ const pendaftarCtx = document.getElementById('pendaftarChart').getContext('2d');
 new Chart(pendaftarCtx, {
     type: 'line',
     data: {
-        labels: {{ chart_data.labels|tojson }},
+        labels: {{ monthly_data|map(attribute='month')|list|tojson }},
         datasets: [{
             label: 'Pendaftar',
-            data: {{ chart_data.values|tojson }},
+            data: {{ monthly_data|map(attribute='count')|list|tojson }},
             borderColor: 'rgb(13, 110, 253)',
-            tension: 0.1
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            tension: 0.1,
+            fill: true
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
     }
 });
 
-// Pie chart for jurusan distribution
+// Pie chart for jurusan statistics
 const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
 new Chart(jurusanCtx, {
     type: 'pie',
     data: {
-        labels: {{ jurusan_data.labels|tojson }},
+        labels: {{ jurusan_data|map(attribute='name')|list|tojson }},
         datasets: [{
-            data: {{ jurusan_data.values|tojson }},
+            data: {{ jurusan_data|map(attribute='count')|list|tojson }},
             backgroundColor: [
                 'rgb(255, 99, 132)',
                 'rgb(54, 162, 235)',
@@ -171,7 +182,12 @@ new Chart(jurusanCtx, {
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
     }
 });
 </script>
