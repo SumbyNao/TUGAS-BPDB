@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Status Pendaftaran</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-{{ status_class.get(pendaftar.status, 'info') }}">
+                <h5 class="alert-heading">Status: {{ pendaftar.status }}</h5>
+                {% if pendaftar.status == 'Menunggu' %}
+                    <p>Pendaftaran Anda sedang dalam proses verifikasi oleh admin.</p>
+                {% elif pendaftar.status == 'Diverifikasi' %}
+                    <p>Selamat! Pendaftaran Anda telah diterima.</p>
+                {% elif pendaftar.status == 'Ditolak' %}
+                    <p>Maaf, pendaftaran Anda ditolak.</p>
+                    {% if pendaftar.alasan_penolakan %}
+                    <p>Alasan: {{ pendaftar.alasan_penolakan }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="mt-4">
+                <h5>Detail Pendaftaran</h5>
+                <table class="table">
+                    <tr>
+                        <th width="200">No. Pendaftaran</th>
+                        <td>{{ pendaftar.no_pendaftaran }}</td>
+                    </tr>
+                    <tr>
+                        <th>Nama Lengkap</th>
+                        <td>{{ pendaftar.nama_lengkap }}</td>
+                    </tr>
+                    <tr>
+                        <th>NISN</th>
+                        <td>{{ pendaftar.nisn }}</td>
+                    </tr>
+                    <tr>
+                        <th>Jurusan Pilihan</th>
+                        <td>{{ pendaftar.jurusan_pilihan }}</td>
+                    </tr>
+                    <tr>
+                        <th>Tanggal Pendaftaran</th>
+                        <td>{{ pendaftar.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

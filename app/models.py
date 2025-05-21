@@ -87,7 +87,8 @@ class Pendaftaran(db.Model):
     kota = db.Column(db.String(50))
     kode_pos = db.Column(db.String(5))
     no_hp = db.Column(db.String(15))
-    status = db.Column(db.String(20), nullable=False, default='pending')
+    status = db.Column(db.String(20), default='Menunggu')  # Menunggu/Diverifikasi/Ditolak
+    status_pendaftaran = db.Column(db.String(20), default='Draft')  # Draft/Submitted/Verified/Rejected
     
     # Data Orangtua
     nama_ayah = db.Column(db.String(100))
@@ -105,7 +106,6 @@ class Pendaftaran(db.Model):
     jurusan_pilihan = db.Column(db.String(100))# Reguler/Prestasi/KIP
     
     # Status
-    status_pendaftaran = db.Column(db.String(20), default='Draft')  # Draft/Submitted/Verified/Rejected
     status_seleksi = db.Column(db.String(20))  # Proses/Diterima/Tidak Diterima
     no_urut = db.Column(db.Integer)  # Nomor urut seleksi
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -117,7 +117,12 @@ class Pendaftaran(db.Model):
 
     @hybrid_property
     def status_display(self):
-        return self.status.title() if self.status else 'Pending'
+        status_map = {
+            'Menunggu': 'Menunggu Verifikasi',
+            'Diverifikasi': 'Diterima',
+            'Ditolak': 'Ditolak'
+        }
+        return status_map.get(self.status, self.status)
 
     @hybrid_property
     def is_complete(self):
@@ -138,13 +143,15 @@ class Pendaftaran(db.Model):
             return 'Lengkap'
         return 'Belum Lengkap'
 
-    def verify(self, admin_user):
+    def verify(self, admin_user, is_accepted=True):
         """Verify pendaftaran by admin"""
-        self.status = 'Diverifikasi'
+        self.status = 'Diverifikasi' if is_accepted else 'Ditolak'
+        self.status_pendaftaran = 'Verified' if is_accepted else 'Rejected'
         self.updated_at = datetime.utcnow()
+        
         admin_user.log_activity(
             'verify_pendaftaran',
-            f'Memverifikasi pendaftaran {self.no_pendaftaran}'
+            f'{"Menerima" if is_accepted else "Menolak"} pendaftaran {self.no_pendaftaran}'
         )
         db.session.commit()
 
@@ -158,17 +165,16 @@ class Jurusan(db.Model):
 
 class Berkas(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    pendaftaran_id = db.Column(db.Integer, db.ForeignKey('pendaftaran.id'))
-    jenis = db.Column(db.String(50))  # KK/Akta/Rapor/SKHUN
+    pendaftaran_id = db.Column(db.Integer, db.ForeignKey('pendaftaran.id'), nullable=False)
+    jenis = db.Column(db.String(50))  # Changed from jenis_berkas
     nama_file = db.Column(db.String(255))
-    ukuran = db.Column(db.Integer)  # Ukuran dalam bytes
-    status = db.Column(db.String(20), default='Pending')  # Pending/Valid/Invalid
+    status = db.Column(db.String(20), default='Menunggu')
     keterangan = db.Column(db.Text)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Pembayaran(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    pendaftaran_id = db.Column(db.Integer, db.ForeignKey('pendaftaran.id'))
+    pendaftaran_id = db.Column(db.Integer, db.ForeignKey('pendaftaran.id'), nullable=False)  # Changed from pendaftar_id
     no_invoice = db.Column(db.String(20), unique=True)
     jumlah = db.Column(db.Integer)
     metode = db.Column(db.String(50))
