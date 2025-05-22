@@ -89,6 +89,7 @@ class Pendaftaran(db.Model):
     no_hp = db.Column(db.String(15))
     status = db.Column(db.String(20), default='Menunggu')  # Menunggu/Diverifikasi/Ditolak
     status_pendaftaran = db.Column(db.String(20), default='Draft')  # Draft/Submitted/Verified/Rejected
+    keterangan = db.Column(db.Text)  # Untuk alasan penolakan
     
     # Data Orangtua
     nama_ayah = db.Column(db.String(100))
@@ -157,11 +158,15 @@ class Pendaftaran(db.Model):
 
 class Jurusan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    kode = db.Column(db.String(10), unique=True)
-    nama = db.Column(db.String(100))
+    nama = db.Column(db.String(100), nullable=False)
+    kode = db.Column(db.String(10), unique=True, nullable=False)
     deskripsi = db.Column(db.Text)
-    kuota = db.Column(db.Integer)
-    pendaftar = db.relationship('Pendaftaran', backref='jurusan', lazy=True)
+    kuota = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Jurusan {self.nama}>'
 
 class Berkas(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -203,20 +208,22 @@ class BerkasDaftarUlang(db.Model):
 
 class Pengumuman(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    judul = db.Column(db.String(200))
-    konten = db.Column(db.Text)
+    judul = db.Column(db.String(255), nullable=False)
+    konten = db.Column(db.Text, nullable=False)
     kategori_id = db.Column(db.Integer, db.ForeignKey('kategori_pengumuman.id'))
     is_published = db.Column(db.Boolean, default=False)
     publish_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    
+    kategori = db.relationship('KategoriPengumuman', backref='pengumuman')
+    creator = db.relationship('User', backref='pengumuman')
 
 class KategoriPengumuman(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    nama = db.Column(db.String(50))
-    slug = db.Column(db.String(50), unique=True)
-    pengumuman = db.relationship('Pengumuman', backref='kategori', lazy=True)
+    nama = db.Column(db.String(50), nullable=False)
+    deskripsi = db.Column(db.String(255))
 
 class ActivityLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

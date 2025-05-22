@@ -1,10 +1,10 @@
 import os
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from app import db
-from app.models import Pendaftaran, Berkas, Pembayaran  # Changed from Pendaftar to Pendaftaran
+from app.models import Pengumuman, Pendaftaran, Berkas, Pembayaran
 from app.ppdb.forms import FormulirPPDB, UploadBerkasForm, PembayaranForm
 from config import UPLOAD_FOLDER
 
@@ -17,44 +17,77 @@ def allowed_file(filename):
 @ppdb_bp.route('/dashboard')
 @login_required
 def dashboard():
-    pendaftaran = Pendaftaran.query.filter_by(user_id=current_user.id).first()
-    
-    if not pendaftaran:
-        flash('Silakan lengkapi formulir pendaftaran terlebih dahulu.', 'warning')
-        return redirect(url_for('ppdb.formulir'))
-    
-    berkas = Berkas.query.filter_by(pendaftaran_id=pendaftaran.id).all()
-    pembayaran = Pembayaran.query.filter_by(pendaftaran_id=pendaftaran.id).first()
-    
-    # Calculate completion percentage
-    total_steps = 3  # formulir, berkas, pembayaran
-    completed_steps = 1  # formulir already completed
-    
-    if berkas and len(berkas) >= 4:  # All required documents
-        completed_steps += 1
-    if pembayaran and pembayaran.status == 'Diverifikasi':
-        completed_steps += 1
+    try:
+        # Check if user is admin
+        if current_user.is_admin:
+            return redirect(url_for('admin.dashboard'))
+            
+        # Get user's registration data
+        pendaftaran = Pendaftaran.query.filter_by(user_id=current_user.id).first()
         
-    progress = (completed_steps / total_steps) * 100
-    
-    return render_template('ppdb/dashboard.html',
-                         pendaftaran=pendaftaran,
-                         berkas=berkas,
-                         pembayaran=pembayaran,
-                         progress=progress)
+        # Get berkas if pendaftaran exists
+        berkas = []
+        if pendaftaran:
+            berkas = Berkas.query.filter_by(pendaftar_id=pendaftaran.id).all()
+            
+        # Get pembayaran if pendaftaran exists
+        pembayaran = None
+        if pendaftaran:
+            pembayaran = Pembayaran.query.filter_by(pendaftar_id=pendaftaran.id).first()
+            
+        # Calculate progress
+        progress = 0
+        if pendaftaran:
+            progress += 33  # Formulir terisi
+            if berkas and len(berkas) >= 4:
+                progress += 33  # Berkas lengkap
+            if pembayaran and pembayaran.status == 'Diverifikasi':
+                progress += 34  # Pembayaran diverifikasi
+                
+        # Get pengumuman
+        pengumuman_list = Pengumuman.query.filter(
+            Pengumuman.is_published == True,
+            Pengumuman.publish_date <= datetime.utcnow()
+        ).order_by(Pengumuman.publish_date.desc()).limit(5).all()
+        
+        return render_template('ppdb/dashboard.html',
+                             pendaftaran=pendaftaran,
+                             berkas=berkas,
+                             pembayaran=pembayaran,
+                             progress=progress,
+                             pengumuman_list=pengumuman_list)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error in dashboard: {str(e)}")
+        flash('Terjadi kesalahan saat memuat dashboard.', 'danger')
+        return redirect(url_for('main.index'))
 
 @ppdb_bp.route('/formulir', methods=['GET', 'POST'])
 @login_required
 def formulir():
-    if current_user.pendaftaran:
-        flash('Anda sudah mengisi formulir pendaftaran.', 'info')
+    # Cek status pendaftaran yang ada
+    existing = Pendaftaran.query.filter_by(user_id=current_user.id).first()
+    if existing:
+        # Tampilkan pesan sesuai status
+        status_messages = {
+            'Menunggu': 'Pendaftaran Anda sedang dalam proses verifikasi.',
+            'Diverifikasi': 'Pendaftaran Anda telah diterima.',
+            'Ditolak': 'Maaf, pendaftaran Anda ditolak.'
+        }
+        flash(status_messages.get(existing.status, 'Anda sudah melakukan pendaftaran.'), 'info')
         return redirect(url_for('ppdb.dashboard'))
 
     form = FormulirPPDB()
     if form.validate_on_submit():
         try:
+            # Generate nomor pendaftaran
+            last_pendaftaran = Pendaftaran.query.order_by(Pendaftaran.id.desc()).first()
+            no_urut = 1 if not last_pendaftaran else last_pendaftaran.id + 1
+            no_pendaftaran = f"PPDB{datetime.now().strftime('%Y')}{no_urut:04d}"
+            
             pendaftar = Pendaftaran(
                 user_id=current_user.id,
+                no_pendaftaran=no_pendaftaran,
                 nisn=form.nisn.data,
                 nama_lengkap=form.nama_lengkap.data,
                 tempat_lahir=form.tempat_lahir.data,
@@ -67,16 +100,21 @@ def formulir():
                 jurusan_pilihan=form.jurusan_pilihan.data,
                 jalur_pendaftaran=form.jalur_pendaftaran.data,
                 status='Menunggu',
+                status_pendaftaran='Submitted',
                 created_at=datetime.utcnow()
             )
             db.session.add(pendaftar)
             db.session.commit()
+
+            # Log aktivitas
+            current_app.logger.info(f"Pendaftaran baru: {no_pendaftaran} oleh {current_user.email}")
+            
             flash('Formulir berhasil dikirim! Silakan upload berkas yang diperlukan.', 'success')
-            return redirect(url_for('ppdb.upload_berkas'))
+            return redirect(url_for('ppdb.dashboard'))
         except Exception as e:
             db.session.rollback()
+            current_app.logger.error(f"Error saat pendaftaran: {str(e)}")
             flash('Terjadi kesalahan. Silakan coba lagi.', 'danger')
-            current_app.logger.error(f"Error in formulir: {str(e)}")
             
     return render_template('ppdb/formulir.html', form=form)
 

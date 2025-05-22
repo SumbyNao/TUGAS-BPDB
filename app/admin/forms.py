@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import (StringField, TextAreaField, SelectField, DateField, SubmitField, BooleanField, IntegerField)
+from wtforms import (StringField, TextAreaField, SelectField, DateField, SubmitField, BooleanField, IntegerField, DateTimeField, EmailField, PasswordField)
 from wtforms.validators import DataRequired, Email, Length, Optional, NumberRange
 
 class FilterPendaftarForm(FlaskForm):
@@ -41,32 +41,21 @@ class FilterPendaftarForm(FlaskForm):
 
 class PengumumanForm(FlaskForm):
     """Form untuk manajemen pengumuman"""
-    judul = StringField('Judul', 
-        validators=[
-            DataRequired(message="Judul harus diisi"),
-            Length(max=200, message="Judul maksimal 200 karakter")
-        ])
-    
-    konten = TextAreaField('Konten', 
-        validators=[DataRequired(message="Konten harus diisi")])
-    
-    kategori = SelectField('Kategori',
-        choices=[
-            ('umum', 'Pengumuman Umum'),
-            ('pendaftaran', 'Info Pendaftaran'),
-            ('hasil', 'Hasil Seleksi'),
-            ('daftar_ulang', 'Daftar Ulang')
-        ],
-        validators=[DataRequired(message="Pilih kategori")])
-    
-    is_published = BooleanField('Publikasikan')
-    
-    lampiran = FileField('Lampiran (PDF)',
-        validators=[
-            FileAllowed(['pdf'], message='File harus dalam format PDF!')
-        ])
-    
-    submit = SubmitField('Simpan Pengumuman')
+    judul = StringField('Judul', validators=[
+        DataRequired(message="Judul harus diisi"),
+        Length(max=255, message="Judul maksimal 255 karakter")
+    ])
+    kategori = SelectField('Kategori', 
+                          choices=[],  # Akan diisi saat form diinisialisasi
+                          coerce=int,
+                          validators=[DataRequired(message="Kategori harus dipilih")])
+    publish_date = DateTimeField('Tanggal Publikasi', 
+                               format='%Y-%m-%dT%H:%M',
+                               validators=[DataRequired(message="Tanggal publikasi harus diisi")])
+    konten = TextAreaField('Konten', validators=[
+        DataRequired(message="Konten harus diisi")
+    ])
+    submit = SubmitField('Simpan')
 
 class VerifikasiBerkasForm(FlaskForm):
     """Form untuk verifikasi berkas pendaftar"""
@@ -171,3 +160,22 @@ class EmailBlastForm(FlaskForm):
         ])
     
     submit = SubmitField('Kirim Email')
+
+class AdminProfileForm(FlaskForm):
+    nama = StringField('Nama Lengkap', validators=[
+        DataRequired(message="Nama harus diisi"),
+        Length(max=100, message="Nama maksimal 100 karakter")
+    ])
+    email = EmailField('Email', validators=[
+        DataRequired(message="Email harus diisi"),
+        Email(message="Format email tidak valid")
+    ])
+    password = PasswordField('Password Baru', validators=[
+        Optional(),
+        Length(min=6, message="Password minimal 6 karakter")
+    ])
+    password_confirm = PasswordField('Konfirmasi Password', validators=[
+        Optional(),
+        Length(min=6, message="Password minimal 6 karakter")
+    ])
+    submit = SubmitField('Simpan Perubahan')

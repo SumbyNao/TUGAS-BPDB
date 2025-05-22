@@ -2,13 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from functools import wraps
 from app.models import Pendaftaran, Berkas, User, Pembayaran, Pengumuman, KategoriPengumuman
-from app.admin.forms import FilterPendaftarForm
+from app.admin.forms import FilterPendaftarForm, PengumumanForm, AdminProfileForm  # Update this line
 from app import db
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import pandas as pd
 import io
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -78,66 +78,77 @@ def profil():
 @admin_bp.route('/dashboard')
 @admin_required
 def dashboard():
-    # Basic statistics with explicit type conversion
-    stats = {
-        'total_pendaftar': int(Pendaftaran.query.count()),
-        'menunggu': int(Pendaftaran.query.filter_by(status='Menunggu').count()),
-        'terverifikasi': int(Pendaftaran.query.filter_by(status='Diverifikasi').count()),
-        'ditolak': int(Pendaftaran.query.filter_by(status='Ditolak').count())
-    }
-
-    # Chart data processing
-    today = datetime.today()
-    start_month = today.replace(day=1) - relativedelta(months=5)
-    
-    # Monthly registration data
-    monthly_data = []
-    for i in range(6):
-        current_month = start_month + relativedelta(months=i)
-        next_month = current_month + relativedelta(months=1)
+    try:
+        # Ambil semua data pendaftar
+        pendaftar = Pendaftaran.query.order_by(Pendaftaran.created_at.desc()).all()
         
-        count = int(Pendaftaran.query.filter(
-            Pendaftaran.created_at >= current_month,
-            Pendaftaran.created_at < next_month
-        ).count())
-        
-        monthly_data.append({
-            'month': current_month.strftime('%B %Y'),
-            'count': count
-        })
+        # Debug info
+        current_app.logger.info(f"Total pendaftar: {len(pendaftar)}")
 
-    # Process jurusan statistics
-    jurusan_stats = db.session.query(
-        Pendaftaran.jurusan_pilihan,
-        db.func.count(Pendaftaran.id).label('total')
-    ).group_by(Pendaftaran.jurusan_pilihan).all()
-
-    jurusan_data = [{
-        'name': str(stat[0]),
-        'count': int(stat[1])
-    } for stat in jurusan_stats]
-
-    # Recent activities
-    recent_activities = []
-    recent_pendaftar = Pendaftaran.query.order_by(
-        Pendaftaran.created_at.desc()
-    ).limit(5).all()
-
-    for p in recent_pendaftar:
-        activity = {
-            'type': 'pendaftaran',
-            'name': str(p.nama_lengkap),
-            'date': p.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'status': str(p.status)
+        # Statistik dasar
+        stats = {
+            'total_pendaftar': int(Pendaftaran.query.count()),
+            'menunggu': int(Pendaftaran.query.filter_by(status='Menunggu').count()),
+            'terverifikasi': int(Pendaftaran.query.filter_by(status='Diverifikasi').count()),
+            'ditolak': int(Pendaftaran.query.filter_by(status='Ditolak').count())
         }
-        recent_activities.append(activity)
 
-    return render_template('admin/dashboard.html',
-                         stats=stats,
-                         monthly_data=monthly_data,
-                         jurusan_data=jurusan_data,
-                         activities=recent_activities)
-# List pendaftar dengan filte
+        # Data grafik bulanan
+        monthly_data = []
+        today = datetime.today()
+        start_month = today.replace(day=1) - relativedelta(months=5)
+        
+        for i in range(6):
+            current_month = start_month + relativedelta(months=i)
+            next_month = current_month + relativedelta(months=1)
+            
+            count = Pendaftaran.query.filter(
+                Pendaftaran.created_at >= current_month,
+                Pendaftaran.created_at < next_month
+            ).count()
+            
+            monthly_data.append({
+                'month': current_month.strftime('%B %Y'),
+                'count': int(count)
+            })
+
+        # Statistik jurusan
+        jurusan_stats = db.session.query(
+            Pendaftaran.jurusan_pilihan,
+            db.func.count(Pendaftaran.id).label('total')
+        ).group_by(Pendaftaran.jurusan_pilihan).all()
+
+        jurusan_data = [{
+            'name': str(stat[0]) if stat[0] else 'Belum memilih',
+            'count': int(stat[1])
+        } for stat in jurusan_stats]
+
+        # Aktivitas terbaru
+        recent_activities = []
+        for p in pendaftar[:5]:  # Ambil 5 pendaftar terbaru
+            activity = {
+                'created_at': p.created_at,
+                'description': f"Pendaftaran baru dari {p.nama_lengkap}",
+                'user': {'nama_lengkap': p.nama_lengkap},
+                'status': p.status,
+                'status_color': 'warning' if p.status == 'Menunggu'
+                               else 'success' if p.status == 'Diverifikasi'
+                               else 'danger'
+            }
+            recent_activities.append(activity)
+
+        return render_template('admin/dashboard.html',
+                             stats=stats,
+                             pendaftar=pendaftar,  # Tambahkan ini
+                             monthly_data=monthly_data,
+                             jurusan_data=jurusan_data,
+                             activities=recent_activities)
+
+    except Exception as e:
+        current_app.logger.error(f"Error di dashboard admin: {str(e)}")
+        flash('Terjadi kesalahan saat memuat data.', 'danger')
+        return redirect(url_for('admin.index'))
+
 @admin_bp.route('/pendaftar')
 @admin_required
 def list_pendaftar():
@@ -173,18 +184,50 @@ def list_pendaftar():
 @admin_bp.route('/pendaftar/<int:id>')
 @admin_required
 def detail_pendaftar(id):
-    pendaftar = Pendaftaran.query.get_or_404(id)
-    return render_template('admin/detail_pendaftar.html', pendaftar=pendaftar)
+    try:
+        pendaftar = Pendaftaran.query.get_or_404(id)
+        berkas = Berkas.query.filter_by(pendaftar_id=pendaftar.id).all()
+        pembayaran = Pembayaran.query.filter_by(pendaftar_id=pendaftar.id).first()
+        
+        return render_template('admin/detail_pendaftar.html',
+                             pendaftar=pendaftar,
+                             berkas=berkas,
+                             pembayaran=pembayaran)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error saat melihat detail: {str(e)}")
+        flash('Terjadi kesalahan saat memuat detail pendaftar.', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 # Verifikasi pendaftar
 @admin_bp.route('/pendaftar/<int:id>/verifikasi', methods=['POST'])
 @admin_required
 def verifikasi_pendaftar(id):
-    pendaftar = Pendaftaran.query.get_or_404(id)
-    pendaftar.status = 'Diverifikasi'
-    db.session.commit()
-    flash(f'Pendaftar {pendaftar.nama_lengkap} telah diverifikasi.', 'success')
-    return redirect(url_for('admin.list_pendaftar'))
+    try:
+        pendaftar = Pendaftaran.query.get_or_404(id)
+        action = request.form.get('action')
+        
+        if action == 'terima':
+            pendaftar.status = 'Diverifikasi'
+            message = f'Pendaftar {pendaftar.nama_lengkap} telah diterima'
+        elif action == 'tolak':
+            pendaftar.status = 'Ditolak'
+            pendaftar.alasan_penolakan = request.form.get('alasan')
+            message = f'Pendaftar {pendaftar.nama_lengkap} telah ditolak'
+        
+        pendaftar.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        # Log aktivitas
+        current_app.logger.info(f"Admin {current_user.nama_lengkap} {message}")
+        flash(message, 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error saat verifikasi: {str(e)}")
+        flash('Terjadi kesalahan saat memverifikasi pendaftar.', 'danger')
+    
+    return redirect(url_for('admin.dashboard'))
 
 # Tolak pendaftar
 @admin_bp.route('/pendaftar/<int:id>/tolak', methods=['POST'])
@@ -222,23 +265,32 @@ def list_berkas():
 @admin_bp.route('/berkas/<int:berkas_id>/verifikasi', methods=['POST'])
 @admin_required
 def verifikasi_berkas(berkas_id):
-    berkas = Berkas.query.get_or_404(berkas_id)
-    berkas.status = 'Diverifikasi'
-    db.session.commit()
-    flash(f'Berkas {berkas.jenis_berkas} telah diverifikasi.', 'success')
-    return jsonify({'status': 'success'})
+    try:
+        berkas = Berkas.query.get_or_404(berkas_id)
+        berkas.status = 'Diverifikasi'
+        db.session.commit()
+        flash(f'Berkas {berkas.jenis_berkas} telah diverifikasi.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error verifikasi berkas: {str(e)}")
+        flash('Terjadi kesalahan saat verifikasi berkas.', 'danger')
+    return redirect(url_for('admin.list_berkas'))
 
-# Tolak berkas
 @admin_bp.route('/berkas/<int:berkas_id>/tolak', methods=['POST'])
 @admin_required
 def tolak_berkas(berkas_id):
-    berkas = Berkas.query.get_or_404(berkas_id)
-    data = request.get_json()
-    berkas.status = 'Ditolak'
-    berkas.alasan_penolakan = data.get('alasan')
-    db.session.commit()
-    flash(f'Berkas {berkas.jenis_berkas} telah ditolak.', 'warning')
-    return jsonify({'status': 'success'})
+    try:
+        berkas = Berkas.query.get_or_404(berkas_id)
+        alasan = request.form.get('alasan')
+        berkas.status = 'Ditolak'
+        berkas.alasan_penolakan = alasan
+        db.session.commit()
+        flash(f'Berkas {berkas.jenis_berkas} telah ditolak.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error tolak berkas: {str(e)}")
+        flash('Terjadi kesalahan saat menolak berkas.', 'danger')
+    return redirect(url_for('admin.list_berkas'))
 
 # Lihat berkas (download/view file)
 @admin_bp.route('/berkas/<int:berkas_id>/view')
@@ -258,25 +310,35 @@ def list_pembayaran():
 @admin_bp.route('/pembayaran/<int:pembayaran_id>/verifikasi', methods=['POST'])
 @admin_required
 def verifikasi_pembayaran(pembayaran_id):
-    pembayaran = Pembayaran.query.get_or_404(pembayaran_id)
-    pembayaran.status = 'Diverifikasi'
-    pembayaran.verified_at = datetime.utcnow()
-    pembayaran.verified_by = current_user.id
-    db.session.commit()
-    flash(f'Pembayaran dari {pembayaran.pendaftar.nama_lengkap} telah diverifikasi.', 'success')
-    return jsonify({'status': 'success'})
+    try:
+        pembayaran = Pembayaran.query.get_or_404(pembayaran_id)
+        pembayaran.status = 'Diverifikasi'
+        pembayaran.verified_at = datetime.utcnow()
+        pembayaran.verified_by = current_user.id
+        db.session.commit()
+        flash(f'Pembayaran dari {pembayaran.pendaftar.nama_lengkap} telah diverifikasi.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error verifikasi pembayaran: {str(e)}")
+        flash('Terjadi kesalahan saat verifikasi pembayaran.', 'danger')
+    return redirect(url_for('admin.list_pembayaran'))
 
 # Tolak pembayaran
 @admin_bp.route('/pembayaran/<int:pembayaran_id>/tolak', methods=['POST'])
 @admin_required
 def tolak_pembayaran(pembayaran_id):
-    pembayaran = Pembayaran.query.get_or_404(pembayaran_id)
-    data = request.get_json()
-    pembayaran.status = 'Ditolak'
-    pembayaran.alasan_penolakan = data.get('alasan')
-    db.session.commit()
-    flash(f'Pembayaran dari {pembayaran.pendaftar.nama_lengkap} telah ditolak.', 'warning')
-    return jsonify({'status': 'success'})
+    try:
+        pembayaran = Pembayaran.query.get_or_404(pembayaran_id)
+        alasan = request.form.get('alasan')
+        pembayaran.status = 'Ditolak'
+        pembayaran.alasan_penolakan = alasan
+        db.session.commit()
+        flash(f'Pembayaran dari {pembayaran.pendaftar.nama_lengkap} telah ditolak.', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error tolak pembayaran: {str(e)}")
+        flash('Terjadi kesalahan saat menolak pembayaran.', 'danger')
+    return redirect(url_for('admin.list_pembayaran'))
 
 # Lihat bukti pembayaran
 @admin_bp.route('/pembayaran/<int:pembayaran_id>/bukti')
@@ -289,18 +351,45 @@ def lihat_bukti(pembayaran_id):
 @admin_bp.route('/statistik')
 @admin_required
 def statistik():
-    jurusan_stats = db.session.query(
-        Pendaftaran.jurusan_pilihan,
-        db.func.count(Pendaftaran.id).label('total'),
-        db.func.sum(db.case([(Pendaftaran.status == 'Diverifikasi', 1)], else_=0)).label('diterima')
-    ).group_by(Pendaftaran.jurusan_pilihan).all()
-    
-    jalur_stats = db.session.query(
-        Pendaftaran.jalur_pendaftaran,
-        db.func.count(Pendaftaran.id).label('total')
-    ).group_by(Pendaftaran.jalur_pendaftaran).all()
-    
-    return render_template('admin/statistik.html', jurusan_stats=jurusan_stats, jalur_stats=jalur_stats)
+    try:
+        # Statistik per jurusan
+        jurusan_stats = db.session.query(
+            Pendaftaran.jurusan_pilihan,
+            db.func.count(Pendaftaran.id).label('total'),
+            db.func.count(case(
+                (Pendaftaran.status == 'Diverifikasi', 1),
+            )).label('diterima')
+        ).group_by(
+            Pendaftaran.jurusan_pilihan
+        ).all()
+
+        jurusan_data = [{
+            'jurusan_pilihan': stat[0] if stat[0] else 'Belum memilih',
+            'total': int(stat[1]),
+            'diterima': int(stat[2])
+        } for stat in jurusan_stats]
+
+        # Statistik per jalur pendaftaran
+        jalur_stats = db.session.query(
+            Pendaftaran.jalur_pendaftaran,
+            db.func.count(Pendaftaran.id).label('total')
+        ).group_by(
+            Pendaftaran.jalur_pendaftaran
+        ).all()
+
+        jalur_data = [{
+            'jalur_pendaftaran': stat[0] if stat[0] else 'Tidak ada jalur',
+            'total': int(stat[1])
+        } for stat in jalur_stats]
+
+        return render_template('admin/statistik.html',
+                             jurusan_stats=jurusan_data,
+                             jalur_stats=jalur_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error in statistik: {str(e)}")
+        flash('Terjadi kesalahan saat memuat statistik.', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 # Export data pendaftar ke Excel
 @admin_bp.route('/export-data')
@@ -340,79 +429,142 @@ def export_data():
 @admin_bp.route('/pengumuman')
 @admin_required
 def pengumuman():
-    pengumuman_list = Pengumuman.query.order_by(Pengumuman.updated_at.desc()).all()
-    kategori_list = KategoriPengumuman.query.all()
-    return render_template('admin/pengumuman.html', pengumuman_list=pengumuman_list, kategori_list=kategori_list)
-
-@admin_bp.route('/pengumuman/<int:id>')
-@admin_required
-def get_pengumuman(id):
-    pengumuman = Pengumuman.query.get_or_404(id)
-    return jsonify({
-        'judul': pengumuman.judul,
-        'kategori_id': pengumuman.kategori_id,
-        'kategori_nama': pengumuman.kategori.nama if pengumuman.kategori else '',
-        'publish_date': pengumuman.publish_date.strftime('%Y-%m-%dT%H:%M') if pengumuman.publish_date else '',
-        'konten': pengumuman.konten
-    })
-
-@admin_bp.route('/pengumuman/<int:id>/edit', methods=['POST'])
-@admin_required
-def edit_pengumuman(id):
-    pengumuman = Pengumuman.query.get_or_404(id)
-    data = request.form
-    pengumuman.judul = data.get('judul')
-    pengumuman.kategori_id = int(data.get('kategori_id')) if data.get('kategori_id') else None
-    publish_date_str = data.get('publish_date')
-    if publish_date_str:
-        pengumuman.publish_date = datetime.strptime(publish_date_str, '%Y-%m-%dT%H:%M')
-    else:
-        pengumuman.publish_date = None
-    pengumuman.konten = data.get('konten')
-    pengumuman.updated_at = datetime.utcnow()
-    db.session.commit()
-    flash('Pengumuman berhasil diperbarui.', 'success')
-    return redirect(url_for('admin.pengumuman'))
+    try:
+        # Buat instance form
+        form = PengumumanForm()
+        
+        # Set pilihan kategori
+        kategori_list = KategoriPengumuman.query.all()
+        form.kategori.choices = [(k.id, k.nama) for k in kategori_list]
+        
+        # Ambil daftar pengumuman
+        pengumuman_list = Pengumuman.query.order_by(Pengumuman.created_at.desc()).all()
+        
+        # Format data pengumuman
+        formatted_pengumuman = []
+        for p in pengumuman_list:
+            kategori_color = 'primary'
+            if p.kategori:
+                if p.kategori.nama.lower() == 'penting':
+                    kategori_color = 'danger'
+                elif p.kategori.nama.lower() == 'info':
+                    kategori_color = 'info'
+                    
+            formatted_pengumuman.append({
+                'id': p.id,
+                'judul': p.judul,
+                'kategori': p.kategori.nama if p.kategori else '-',
+                'kategori_color': kategori_color,
+                'is_published': p.is_published,
+                'publish_date': p.publish_date,
+                'updated_at': p.updated_at,
+                'konten': p.konten
+            })
+        
+        return render_template('admin/pengumuman.html',
+                             form=form,
+                             pengumuman_list=formatted_pengumuman)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error di halaman pengumuman: {str(e)}")
+        flash('Terjadi kesalahan saat memuat data pengumuman.', 'danger')
+        return redirect(url_for('admin.dashboard'))
 
 @admin_bp.route('/pengumuman/tambah', methods=['POST'])
 @admin_required
 def tambah_pengumuman():
-    data = request.form
-    publish_date = None
-    if data.get('publish_date'):
-        publish_date = datetime.strptime(data.get('publish_date'), '%Y-%m-%dT%H:%M')
-    pengumuman = Pengumuman(
-        judul=data.get('judul'),
-        kategori_id=int(data.get('kategori_id')) if data.get('kategori_id') else None,
-        publish_date=publish_date,
-        konten=data.get('konten'),
-        is_published=False,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        created_by=current_user.id
-    )
-    db.session.add(pengumuman)
-    db.session.commit()
-    flash('Pengumuman berhasil ditambahkan.', 'success')
+    form = PengumumanForm()
+    # Set choices sebelum validasi
+    kategori_list = KategoriPengumuman.query.all()
+    form.kategori.choices = [(k.id, k.nama) for k in kategori_list]
+    
+    if form.validate_on_submit():
+        try:
+            pengumuman = Pengumuman(
+                judul=form.judul.data,
+                konten=form.konten.data,
+                kategori_id=form.kategori.data,
+                publish_date=form.publish_date.data,
+                created_by=current_user.id
+            )
+            db.session.add(pengumuman)
+            db.session.commit()
+            flash('Pengumuman berhasil ditambahkan!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error tambah pengumuman: {str(e)}")
+            flash('Terjadi kesalahan saat menambah pengumuman.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{getattr(form, field).label.text}: {error}', 'danger')
+    
     return redirect(url_for('admin.pengumuman'))
 
-@admin_bp.route('/pengumuman/<int:id>/delete', methods=['POST'])
+@admin_bp.route('/pengumuman/<int:id>/edit', methods=['GET', 'POST'])
 @admin_required
-def delete_pengumuman(id):
+def edit_pengumuman(id):
     pengumuman = Pengumuman.query.get_or_404(id)
-    db.session.delete(pengumuman)
-    db.session.commit()
-    flash('Pengumuman berhasil dihapus.', 'success')
-    return jsonify({'status': 'success'})
+    
+    if request.method == 'GET':
+        return jsonify({
+            'judul': pengumuman.judul,
+            'kategori_id': pengumuman.kategori_id,
+            'konten': pengumuman.konten,
+            'publish_date': pengumuman.publish_date.isoformat() if pengumuman.publish_date else None
+        })
+    
+    form = PengumumanForm()
+    if form.validate_on_submit():
+        try:
+            pengumuman.judul = form.judul.data
+            pengumuman.kategori_id = form.kategori.data
+            pengumuman.konten = form.konten.data
+            pengumuman.publish_date = form.publish_date.data
+            pengumuman.updated_at = datetime.utcnow()
+            db.session.commit()
+            flash('Pengumuman berhasil diperbarui!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error edit pengumuman: {str(e)}")
+            flash('Terjadi kesalahan saat memperbarui pengumuman.', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{getattr(form, field).label.text}: {error}', 'danger')
+                
+    return redirect(url_for('admin.pengumuman'))
 
-@admin_bp.route('/pengumuman/<int:id>/toggle', methods=['POST'])
-@admin_required
-def toggle_pengumuman(id):
-    pengumuman = Pengumuman.query.get_or_404(id)
-    pengumuman.is_published = not pengumuman.is_published
-    pengumuman.updated_at = datetime.utcnow()
-    db.session.commit()
-    status = 'diterbitkan' if pengumuman.is_published else 'disembunyikan'
-    flash(f'Pengumuman berhasil {status}.', 'info')
-    return jsonify({'status': 'success', 'published': pengumuman.is_published})
+@admin_bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if not current_user.is_admin:
+        flash('Anda tidak memiliki akses ke halaman ini.', 'danger')
+        return redirect(url_for('main.index'))
+        
+    form = AdminProfileForm()
+    if form.validate_on_submit():
+        try:
+            current_user.nama = form.nama.data
+            current_user.email = form.email.data
+            
+            if form.password.data:
+                if form.password.data != form.password_confirm.data:
+                    flash('Password tidak cocok.', 'danger')
+                    return render_template('admin/profile.html', form=form)
+                current_user.set_password(form.password.data)
+                
+            db.session.commit()
+            flash('Profil berhasil diperbarui.', 'success')
+            return redirect(url_for('admin.profile'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Terjadi kesalahan saat memperbarui profil.', 'danger')
+            
+    elif request.method == 'GET':
+        form.nama.data = current_user.nama
+        form.email.data = current_user.email
+        
+    return render_template('admin/profile.html', form=form)
 
